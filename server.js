@@ -1029,7 +1029,94 @@ app.post(
     }
   }
 );
+/* =========================
+   CUSTOMER SERVICE CHAT
+========================= */
 
+app.get('/api/admin/chat/:userId', auth, async (req, res) => {
+  try {
+    const user = await User.findOne({
+      _id: req.params.userId,
+      role: 'user'
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const messages = await Message.find({
+      userId: req.params.userId
+    }).sort({ createdAt: 1 });
+
+    res.json({
+      success: true,
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone
+      },
+      messages
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to load chat'
+    });
+  }
+});
+
+app.post('/api/admin/chat/:userId/reply', auth, async (req, res) => {
+  try {
+    const text = String(req.body?.text || '').trim();
+
+    if (!text) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reply is required'
+      });
+    }
+
+    if (text.length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Reply is too long'
+      });
+    }
+
+    const user = await User.findOne({
+      _id: req.params.userId,
+      role: 'user'
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    const message = await Message.create({
+      userId: user._id,
+      sender: 'admin',
+      text,
+      read: false
+    });
+
+    res.status(201).json({
+      success: true,
+      message
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Reply sending failed'
+    });
+  }
+});
 /* =========================
    AUDIT LOGS
 ========================= */
