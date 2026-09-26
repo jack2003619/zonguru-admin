@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zonguru Admin</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f3ff;color:#21183d}button,input,textarea,select{font:inherit}button{cursor:pointer;border:0}.wrap{max-width:1250px;margin:auto;padding:20px}.top{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border-radius:18px;padding:16px 20px;box-shadow:0 5px 22px #0001;margin-bottom:16px}.brand{font-size:22px;font-weight:900;color:#5634bc}.top small{display:block;color:#777}.logout{background:#eee7ff;color:#5634bc;padding:10px 14px;border-radius:10px;font-weight:800}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.tab{background:#fff;color:#5634bc;padding:11px 15px;border-radius:11px;font-weight:800;box-shadow:0 3px 12px #0001}.tab.active{background:#5634bc;color:#fff}.card{background:#fff;border-radius:18px;padding:18px;box-shadow:0 5px 22px #0001;margin-bottom:16px}.hidden{display:none!important}h2{margin:0 0 15px;font-size:20px}h3{margin:0 0 10px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:13px;font-weight:800;color:#6f6680}.field input,.field textarea,.field select{width:100%;border:1px solid #ddd6ef;border-radius:10px;padding:11px;outline:none;background:#fff}.field textarea{resize:vertical}.primary{background:#5634bc;color:#fff;padding:11px 16px;border-radius:10px;font-weight:800}.secondary{background:#eee8ff;color:#5634bc;padding:9px 13px;border-radius:9px;font-weight:800}.danger{background:#ffe7e7;color:#b32121;padding:9px 13px;border-radius:9px;font-weight:800}.success{background:#e5faed;color:#168343;padding:9px 13px;border-radius:9px;font-weight:800}.muted{color:#777}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:700px}.table th,.table td{text-align:left;padding:11px;border-bottom:1px solid #eee8f5;vertical-align:top}.table th{font-size:12px;color:#71677f;text-transform:uppercase}.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eee8ff;color:#5634bc;font-size:12px;font-weight:800}.pill.green{background:#e5faed;color:#168343}.pill.red{background:#ffe7e7;color:#b32121}.actions{display:flex;gap:7px;flex-wrap:wrap}.notice{padding:11px 13px;border-radius:10px;background:#f0ebff;color:#5634bc;margin-bottom:12px;display:none}.login{max-width:420px;margin:8vh auto}.chat-layout{display:grid;grid-template-columns:320px 1fr;gap:14px}.users-list{max-height:590px;overflow:auto}.chat-user{padding:12px;border:1px solid #eee7f8;border-radius:11px;margin-bottom:8px;background:#fff;text-align:left;width:100%}.chat-user.active{border-color:#5634bc;background:#f1ecff}.chat-user b{display:block}.chat-user small{color:#777}.chat-box{border:1px solid #e6def5;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-height:590px}.chat-head{padding:14px;background:#f4efff;border-bottom:1px solid #e6def5}.chat-body{padding:14px;flex:1;overflow:auto;max-height:455px;background:#faf9fd}.msg{max-width:78%;padding:10px 12px;border-radius:13px;margin:7px 0;white-space:pre-wrap;word-break:break-word}.msg.user{background:#fff;border:1px solid #e4dff0;margin-right:auto}.msg.admin{background:#5634bc;color:#fff;margin-left:auto}.chat-send{display:flex;gap:8px;padding:10px;border-top:1px solid #e6def5}.chat-send textarea{flex:1;border:1px solid #ddd6ef;border-radius:10px;padding:10px;resize:none}.empty{padding:30px;text-align:center;color:#888}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:15px}.stat{padding:14px;border-radius:14px;background:#f4efff}.stat b{font-size:22px;display:block;color:#5634bc}.modal{position:fixed;inset:0;background:#0006;display:none;align-items:center;justify-content:center;padding:20px;z-index:20}.modal.show{display:flex}.modal-card{background:#fff;border-radius:18px;padding:20px;width:min(620px,100%);max-height:90vh;overflow:auto}.close{float:right;background:#eee;padding:6px 10px;border-radius:8px}.toast{position:fixed;right:18px;bottom:18px;background:#21183d;color:#fff;padding:12px 16px;border-radius:10px;display:none;z-index:50}.toast.show{display:block}@media(max-width:760px){.chat-layout{grid-template-columns:1fr}.chat-box{min-height:520px}.wrap{padding:10px}.top{padding:13px}.table{min-width:600px}}
+</style>
+</head>
+<body>
+<div id="loginPage" class="login card">
+  <h2>Zonguru Admin Login</h2>
+  <div id="loginNotice" class="notice"></div>
+  <div class="field"><label>Username</label><input id="loginUsername" value="admin" autocomplete="username"></div>
+  <div class="field" style="margin-top:10px"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password"></div>
+  <button class="primary" style="width:100%;margin-top:14px" onclick="login()">Login</button>
+</div>
+
+<div id="app" class="hidden">
+<div class="wrap">
+  <div class="top"><div><div class="brand">Zonguru Admin</div><small id="statusText">Connected</small></div><button class="logout" onclick="logout()">Logout</button></div>
+  <div class="tabs">
+    <button class="tab active" data-tab="users" onclick="showTab('users')">Users</button>
+    <button class="tab" data-tab="transactions" onclick="showTab('transactions')">Transactions</button>
+    <button class="tab" data-tab="products" onclick="showTab('products')">Products</button>
+    <button class="tab" data-tab="messages" onclick="showTab('messages')">Messages <span id="chatCount" class="pill red hidden">0</span></button>
+    <button class="tab" data-tab="audits" onclick="showTab('audits')">Audit Logs</button>
+  </div>
+
+  <section id="usersSection" class="card">
+    <h2>Users</h2><div id="usersNotice" class="notice"></div>
+    <div class="stats"><div class="stat"><b id="userCount">0</b>Users</div></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>User</th><th>Email</th><th>Phone</th><th>Balance</th><th>Role</th><th>Created</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div>
+  </section>
+
+  <section id="transactionsSection" class="card hidden">
+    <h2>Transactions</h2><div id="transactionsNotice" class="notice"></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Method</th><th>Status</th><th>Details</th><th>Actions</th></tr></thead><tbody id="transactionsBody"></tbody></table></div>
+  </section>
+
+  <section id="productsSection" class="card hidden">
+    <h2>Products</h2><div id="productsNotice" class="notice"></div>
+    <button class="primary" onclick="openProduct()">+ Add Product</button>
+    <div class="table-wrap" style="margin-top:14px"><table class="table"><thead><tr><th>Name</th><th>Price</th><th>Profit</th><th>Status</th><th>Actions</th></tr></thead><tbody id="productsBody"></tbody></table></div>
+  </section>
+
+  <section id="messagesSection" class="card hidden">
+    <div id="messagesNotice" class="notice"></div>
+    <h2>💬 Customer Service Messages</h2>
+    <p class="muted" style="margin-top:-6px">Users who contact Customer Service appear here. Select a user to view the full conversation and reply.</p>
+    <div class="chat-layout">
+      <div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Search user</label>
+          <input id="chatSearch" oninput="renderChatUsers()" placeholder="Username / email / phone">
+        </div>
+        <div id="chatUsers" class="users-list"></div>
+      </div>
+      <div class="chat-box">
+        <div id="chatHead" class="chat-head"><b>Select a user</b></div>
+        <div id="chatBody" class="chat-body"><div class="empty">Select a user to open the conversation.</div></div>
+        <div class="chat-send">
+          <textarea id="chatInput" rows="2" placeholder="Type your reply..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendReply()}"></textarea>
+          <button class="primary" onclick="sendReply()">Send</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <section id="auditsSection" class="card hidden">
+    <h2>Audit Logs</h2><div id="auditsNotice" class="notice"></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>Action</th><th>Admin</th><th>Target</th><th>Details</th><th>Date</th></tr></thead><tbody id="auditsBody"></tbody></table></div>
+  </section>
+</div></div>
+
+<div id="productModal" class="modal"><div class="modal-card"><button class="close" onclick="closeProduct()">×</button><h2 id="productTitle">Add Product</h2><input id="productId" type="hidden"><div class="grid"><div class="field"><label>Name</label><input id="productName"></div><div class="field"><label>Price</label><input id="productPrice" type="number" step="any"></div><div class="field"><label>Profit</label><input id="productProfit" type="number" step="any"></div><div class="field"><label>Status</label><select id="productStatus"><option value="active">Active</option><option value="inactive">Inactive</option></select></div></div><div class="field" style="margin-top:10px"><label>Description</label><textarea id="productDescription" rows="4"></textarea></div><button class="primary" style="margin-top:14px" onclick="saveProduct()">Save Product</button></div></div>
+<div id="toast" class="toast"></div>
+<script>
+const API=location.origin;
+let adminToken=localStorage.getItem('zonguru_admin_token')||'';
+let users=[],transactions=[],products=[],messages=[],audits=[],chatUsers=[],selectedUser=null;
+
+function esc(v){return String(v??'').replace(/[&<>'"]/g,s=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[s]))}
+function id(v){return String(v&&v._id||v&&v.id||'')}
+function toast(s){const e=document.getElementById('toast');e.textContent=s;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2200)}
+function notice(id,msg){const e=document.getElementById(id);if(!e)return;e.textContent=msg;e.style.display=msg?'block':'none'}
+async function api(path,opt={}){const r=await fetch(API+path,{...opt,headers:{'Content-Type':'application/json',...(opt.headers||{}),...(adminToken?{Authorization:'Bearer '+adminToken}:{})}});let d={};try{d=await r.json()}catch{}if(!r.ok||d.success===false)throw new Error(d.message||('Request failed: '+r.status));return d}
+function login(){const username=document.getElementById('loginUsername').value.trim();const password=document.getElementById('loginPassword').value;notice('loginNotice','');api('/api/admin/login',{method:'POST',body:JSON.stringify({username,password})}).then(d=>{adminToken=d.token||d.accessToken||'';localStorage.setItem('zonguru_admin_token',adminToken);if(!adminToken)throw new Error('No admin token returned');startApp()}).catch(e=>notice('loginNotice',e.message))}
+function logout(){localStorage.removeItem('zonguru_admin_token');adminToken='';location.reload()}
+function startApp(){document.getElementById('loginPage').classList.add('hidden');document.getElementById('app').classList.remove('hidden');loadAll()}
+function showTab(name){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===name));document.querySelectorAll('section[id$="Section"]').forEach(s=>s.classList.add('hidden'));document.getElementById(name+'Section').classList.remove('hidden');if(name==='users')loadUsers();if(name==='transactions')loadTransactions();if(name==='products')loadProducts();if(name==='messages')loadChatUsers();if(name==='audits')loadAudits()}
+async function loadAll(){await Promise.allSettled([loadUsers(),loadTransactions(),loadProducts(),loadAudits(),loadChatUsers()]);document.getElementById('statusText').textContent='Connected';}
+async function loadUsers(){try{const d=await api('/api/admin/users');users=d.users||d.data||[];document.getElementById('userCount').textContent=users.length;renderUsers()}catch(e){notice('usersNotice',e.message)}}
+function renderUsers(){document.getElementById('usersBody').innerHTML=users.map(u=>`<tr><td><b>${esc(u.username||'-')}</b><br><small>${esc(id(u))}</small></td><td>${esc(u.email||'-')}</td><td>${esc(u.phone||'-')}</td><td>${esc(u.balance??0)} ${esc(u.currency||'USDT')}<br><button class="secondary" onclick="adjustBalance('${id(u)}')">Adjust</button></td><td><span class="pill">${esc(u.role||'user')}</span></td><td>${date(u.createdAt)}</td><td><div class="actions"><button class="secondary" onclick="openUserChat('${id(u)}')">Chat</button></div></td></tr>`).join('')||`<tr><td colspan="7" class="empty">No users</td></tr>`}
+async function adjustBalance(uid){const amount=prompt('Balance change amount. Use negative value to subtract:');if(amount===null||amount.trim()==='')return;const note=prompt('Reason (optional):')||'';try{await api('/api/admin/users/'+encodeURIComponent(uid)+'/balance',{method:'POST',body:JSON.stringify({amount:Number(amount),note})});toast('Balance updated');loadUsers()}catch(e){alert(e.message)}}
+async function loadTransactions(){try{const d=await api('/api/admin/transactions');transactions=d.transactions||d.data||[];renderTransactions()}catch(e){notice('transactionsNotice',e.message)}}
+function renderTransactions(){document.getElementById('transactionsBody').innerHTML=transactions.map(t=>{const status=String(t.status||'pending').toLowerCase();return `<tr><td>${esc(t.username||t.user?.username||t.userId||'-')}</td><td>${esc(t.type||'-')}</td><td>${esc(t.amount??0)} ${esc(t.currency||'USDT')}</td><td>${esc(t.method||t.network||'-')}</td><td><span class="pill ${status==='approved'?'green':status==='rejected'?'red':''}">${esc(status)}</span></td><td>${esc(t.note||t.accountNumber||t.walletAddress||'-')}</td><td>${status==='pending'?`<div class="actions"><button class="success" onclick="txAction('${id(t)}','approve')">Approve</button><button class="danger" onclick="txAction('${id(t)}','reject')">Reject</button></div>`:'-'}</td></tr>`}).join('')||`<tr><td colspan="7" class="empty">No transactions</td></tr>`}
+async function txAction(tid,action){if(!confirm(action+' this transaction?'))return;try{await api('/api/admin/transactions/'+encodeURIComponent(tid)+'/'+action,{method:'POST'});toast('Transaction '+action+'d');loadTransactions();loadUsers();}catch(e){alert(e.message)}}
+async function loadProducts(){try{const d=await api('/api/admin/products');products=d.products||d.data||[];renderProducts()}catch(e){notice('productsNotice',e.message)}}
+function renderProducts(){document.getElementById('productsBody').innerHTML=products.map(p=>`<tr><td><b>${esc(p.name||'-')}</b><br><small>${esc(p.description||'')}</small></td><td>${esc(p.price??0)}</td><td>${esc(p.profit??p.profitPercent??0)}</td><td>${esc(p.status||'active')}</td><td><div class="actions"><button class="secondary" onclick="openProduct('${id(p)}')">Edit</button><button class="danger" onclick="deleteProduct('${id(p)}')">Delete</button></div></td></tr>`).join('')||`<tr><td colspan="5" class="empty">No products</td></tr>`}
+function openProduct(pid=''){const p=products.find(x=>id(x)===pid);document.getElementById('productId').value=pid;document.getElementById('productTitle').textContent=p?'Edit Product':'Add Product';document.getElementById('productName').value=p?.name||'';document.getElementById('productPrice').value=p?.price??'';document.getElementById('productProfit').value=p?.profit??p?.profitPercent??'';document.getElementById('productStatus').value=p?.status||'active';document.getElementById('productDescription').value=p?.description||'';document.getElementById('productModal').classList.add('show')}
+function closeProduct(){document.getElementById('productModal').classList.remove('show')}
+async function saveProduct(){const pid=document.getElementById('productId').value;const body={name:document.getElementById('productName').value.trim(),price:Number(document.getElementById('productPrice').value||0),profit:Number(document.getElementById('productProfit').value||0),status:document.getElementById('productStatus').value,description:document.getElementById('productDescription').value};try{await api('/api/admin/products'+(pid?'/'+encodeURIComponent(pid):''),{method:pid?'PUT':'POST',body:JSON.stringify(body)});closeProduct();toast('Product saved');loadProducts()}catch(e){alert(e.message)}}
+async function deleteProduct(pid){if(!confirm('Delete this product?'))return;try{await api('/api/admin/products/'+encodeURIComponent(pid),{method:'DELETE'});toast('Product deleted');loadProducts()}catch(e){alert(e.message)}}
+async function loadMessages(){
+  try{
+    const d=await api('/api/admin/messages');
+    messages=d.messages||d.data||[];
+    return messages;
+  }catch(e){notice('messagesNotice',e.message);return []}
+}
+
+async function loadChatUsers(){
+  try{
+    if(!users.length)await loadUsers();
+    await loadMessages();
+    const ids=new Set(messages.map(m=>id(m.userId)).filter(Boolean));
+    chatUsers=users.filter(u=>ids.has(id(u)) && (u.role==='user'||!u.role));
+    // If the message endpoint is unavailable or old messages do not expose userId, keep all normal users visible.
+    if(!chatUsers.length && users.length)chatUsers=users.filter(u=>u.role==='user'||!u.role);
+    renderChatUsers();
+    await refreshChatCount();
+  }catch(e){document.getElementById('chatUsers').innerHTML='<div class="empty">Unable to load Customer Service users.</div>'}
+}
+
+function renderChatUsers(){
+  const q=(document.getElementById('chatSearch').value||'').toLowerCase().trim();
+  const arr=chatUsers.filter(u=>(u.username+' '+(u.email||'')+' '+(u.phone||'')).toLowerCase().includes(q));
+  document.getElementById('chatUsers').innerHTML=arr.map(u=>{
+    const last=messages.filter(m=>id(m.userId)===id(u)).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0))[0];
+    return `<button class="chat-user ${selectedUser&&id(selectedUser)===id(u)?'active':''}" onclick="openUserChat('${id(u)}')"><b>${esc(u.username||'-')}</b><small>${esc(u.email||u.phone||id(u))}</small>${last?`<small style="display:block;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(last.text||'')}</small>`:''}</button>`
+  }).join('')||'<div class="empty">No Customer Service users found.</div>'
+}
+
+async function openUserChat(uid){const u=users.find(x=>id(x)===uid)||chatUsers.find(x=>id(x)===uid);selectedUser=u||{_id:uid,username:uid};showTab('messages');renderChatUsers();document.getElementById('chatHead').innerHTML=`<b>${esc(selectedUser.username||'-')}</b><br><small>${esc(selectedUser.email||selectedUser.phone||id(selectedUser))}</small>`;await loadConversation()}
+async function loadConversation(){if(!selectedUser)return;try{const d=await api('/api/admin/chat/'+encodeURIComponent(id(selectedUser)));const arr=d.messages||d.data||[];document.getElementById('chatBody').innerHTML=arr.map(m=>`<div class="msg ${m.sender==='admin'?'admin':'user'}">${esc(m.text||'')}<div style="font-size:10px;opacity:.7;margin-top:4px">${date(m.createdAt)}</div></div>`).join('')||'<div class="empty">No messages yet.</div>';const b=document.getElementById('chatBody');b.scrollTop=b.scrollHeight}catch(e){document.getElementById('chatBody').innerHTML='<div class="empty">'+esc(e.message)+'</div>'}}
+async function sendReply(){if(!selectedUser)return alert('Select a user first.');const text=document.getElementById('chatInput').value.trim();if(!text)return;try{await api('/api/admin/chat/'+encodeURIComponent(id(selectedUser))+'/reply',{method:'POST',body:JSON.stringify({text})});document.getElementById('chatInput').value='';await loadConversation();toast('Reply sent')}catch(e){alert(e.message)}}
+async function refreshChatCount(){
+  try{
+    await loadMessages();
+    const n=messages.filter(m=>m.sender==='user').length;
+    const e=document.getElementById('chatCount');
+    e.textContent=n;
+    e.classList.toggle('hidden',n===0);
+  }catch(e){}
+}
+async function loadAudits(){try{const d=await api('/api/admin/audits');audits=d.audits||d.logs||d.data||[];document.getElementById('auditsBody').innerHTML=audits.map(a=>`<tr><td>${esc(a.action||'-')}</td><td>${esc(a.admin||a.username||'-')}</td><td>${esc(a.target||a.targetId||'-')}</td><td>${esc(a.details||a.description||'-')}</td><td>${date(a.createdAt)}</td></tr>`).join('')||'<tr><td colspan="5" class="empty">No audit logs</td></tr>'}catch(e){notice('auditsNotice',e.message)}}
+function date(v){if(!v)return '-';try{return new Date(v).toLocaleString()}catch{return String(v)}}
+setInterval(async()=>{if(!adminToken)return;try{await refreshChatCount();if(selectedUser&&!document.getElementById('messagesSection').classList.contains('hidden')){await loadMessages();renderChatUsers();await loadConversation()}}catch(e){}},5000);
+if(adminToken)startApp();
+document.getElementById('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')login()});
+</script>
+</body>
+</html>
