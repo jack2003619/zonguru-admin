@@ -15,9 +15,26 @@ main{padding:12px;max-width:1200px;margin:auto}.tabs{display:flex;gap:8px;overfl
 <div id="login" class="card login"><h2>Zonguru Admin</h2><div class="field"><label>Username</label><input id="lu" value="admin"></div><div class="field"><label>Password</label><input id="lp" type="password"></div><button class="primary" onclick="login()">Login</button><div id="loginMsg"></div></div>
 <div id="app" class="hidden">
 <header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><button class="secondary" onclick="logout()">Logout</button></header>
-<nav class="tabs"><button data-t="users" class="active" onclick="tab('users')">Users</button><button data-t="transactions" onclick="tab('transactions')">Transactions</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button></nav>
+<nav class="tabs"><button data-t="users" class="active" onclick="tab('users')">Users</button><button data-t="transactions" onclick="tab('transactions')">Transactions</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button></nav>
 <main>
-<section id="users" class="card"><h3>Users</h3><div id="usersMsg"></div><div class="tablewrap"><table><thead><tr><th>User</th><th>Email / Phone</th><th>Balance</th><th>Frozen</th><th>Credit</th><th>VIP</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div></section>
+<section id="users" class="card"><h3>Users</h3><div id="usersMsg"></div><div class="tablewrap"><table><thead><tr><th>User</th><th>Email / Phone</th><th>Balance</th><th>Frozen</th><th>Credit</th><th>VIP</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div></section><section id="admins" class="card hidden">
+<h3>Second Admin Management</h3>
+<div class="notice">Main Admin only. Each Second Admin can see and control only users registered with that admin's invite code. Existing users/data are preserved.</div>
+<div class="grid">
+  <div class="field"><label>Second Admin Username</label><input id="newAdminUsername" placeholder="e.g. agent01"></div>
+  <div class="field"><label>Password (minimum 6)</label><input id="newAdminPassword" type="password" placeholder="New admin password"></div>
+</div>
+<div class="actions"><button class="primary" onclick="createSecondAdmin()">Create Second Admin</button><button class="secondary" onclick="loadAdminManagement()">Refresh</button></div>
+<div id="adminMsg"></div>
+<h4 style="margin-top:18px">Second Admins</h4>
+<div class="tablewrap"><table><thead><tr><th>Username</th><th>Status</th><th>Users</th><th>Created</th><th>Invite</th></tr></thead><tbody id="adminsBody"></tbody></table></div>
+<h4 style="margin-top:18px">Invite Codes</h4>
+<div class="grid">
+  <div class="field"><label>Assign Invite Code To</label><select id="inviteOwner"></select></div>
+  <div class="field"><label>Action</label><div class="actions"><button class="primary" onclick="createInviteCode()">Generate Invite Code</button></div></div>
+</div>
+<div class="tablewrap"><table><thead><tr><th>Code</th><th>Second Admin</th><th>Status</th><th>Used</th><th>Created</th><th>Action</th></tr></thead><tbody id="invitesBody"></tbody></table></div>
+</section>
 <section id="transactions" class="card hidden"><h3>Transactions</h3><div id="txMsg"></div><div class="tablewrap"><table><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th>Details</th><th>Action</th></tr></thead><tbody id="txBody"></tbody></table></div></section>
 <section id="products" class="card hidden"><h3>Products & Insufficient-Balance Rules</h3><div class="notice">Safe mode: an insufficient-balance rule blocks the order and shows the shortfall. It does not create a negative balance.</div><div class="actions"><button class="primary" onclick="editProduct()">Add Product</button><button class="secondary" onclick="loadProducts()">Refresh</button></div><div id="productMsg"></div><div class="tablewrap"><table><thead><tr><th>Product</th><th>Price</th><th>Profit Amount</th><th>VIP</th><th>Insufficient Rule</th><th>Action</th></tr></thead><tbody id="productsBody"></tbody></table></div></section>
 <section id="chat" class="card hidden"><h3>Customer Service</h3><div class="chat"><div><input id="chatSearch" placeholder="Search user" oninput="renderChatUsers()" style="width:100%;padding:10px;border:1px solid #ddd6ee;border-radius:9px"><div id="chatUsers" class="chatUsers" style="margin-top:8px"></div></div><div><div id="chatHead" class="stat">Select a user</div><div id="chatBody" class="chatBody"></div><div class="actions"><textarea id="chatInput" placeholder="Reply..." style="flex:1;min-height:60px"></textarea><button class="primary" onclick="sendReply()">Send</button></div></div></div></section>
@@ -29,11 +46,25 @@ main{padding:12px;max-width:1200px;margin:auto}.tabs{display:flex;gap:8px;overfl
 <div id="productModal" class="modal"><div class="modalbox"><h3>Product / Task Settings</h3><input id="pid" type="hidden"><div class="grid"><div class="field"><label>Name</label><input id="pn"></div><div class="field"><label>Price</label><input id="pp" type="number" min="0" step="0.01"></div><div class="field"><label>Profit Amount / Rate</label><input id="pr" type="number" min="0" step="0.01"></div><div class="field"><label>Required VIP</label><input id="pv" type="number" min="0" max="3"></div></div><hr><h4>Insufficient Balance</h4><div class="notice">Insufficient-balance rules are now configured per selected user under <b>Users → Settings</b>. Product-level insufficient-balance rules are not applied to users globally.</div><div class="actions"><button class="primary" onclick="saveProduct()">Save</button><button onclick="closeProduct()">Close</button></div><div id="prodMsg"></div></div></div>
 
 <script>
-const API='https://zonguru-admin.onrender.com';let token=localStorage.getItem('zonguru_admin_token')||'';let users=[],products=[],selected=null,chatSelected=null,chatList=[];
+const API='https://zonguru-admin.onrender.com';let token=localStorage.getItem('zonguru_admin_token')||'';let users=[],products=[],selected=null,chatSelected=null,chatList=[],currentAdmin=null,secondAdmins=[],inviteCodes=[];
 const $=id=>document.getElementById(id);const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
 async function api(path,opt={}){opt.headers=opt.headers||{};opt.headers['Content-Type']='application/json';if(token)opt.headers.Authorization='Bearer '+token;const r=await fetch(API+path,opt);const d=await r.json().catch(()=>({}));if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
-async function login(){try{const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({username:$('lu').value.trim(),password:$('lp').value})});token=d.token;localStorage.setItem('zonguru_admin_token',token);start()}catch(e){msg('loginMsg',e.message)}}function logout(){localStorage.removeItem('zonguru_admin_token');location.reload()}function start(){$('login').classList.add('hidden');$('app').classList.remove('hidden');loadUsers()}
-function tab(t){document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));['users','transactions','products','chat','audits'].forEach(x=>$(x).classList.toggle('hidden',x!==t));if(t==='users')loadUsers();if(t==='transactions')loadTx();if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits()}
+async function login(){try{const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({username:$('lu').value.trim(),password:$('lp').value})});token=d.token;localStorage.setItem('zonguru_admin_token',token);start()}catch(e){msg('loginMsg',e.message)}}function logout(){localStorage.removeItem('zonguru_admin_token');location.reload()}
+async function start(){
+  $('login').classList.add('hidden');$('app').classList.remove('hidden');
+  try{
+    const d=await api('/api/admin/me'); currentAdmin=d.admin||null;
+    $('adminTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');
+    const sub=document.querySelector('header .sub');
+    if(sub) sub.textContent=(currentAdmin?.adminType==='superadmin'?'Main Admin':'Second Admin')+' · '+(currentAdmin?.username||'');
+    await loadUsers();
+  }catch(e){logout()}
+}
+function tab(t){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
+  ['users','transactions','products','chat','audits','admins'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
+  if(t==='users')loadUsers();if(t==='transactions')loadTx();if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
+}
 async function loadUsers(){try{const d=await api('/api/admin/users');users=d.users||[];renderUsers()}catch(e){msg('usersMsg',e.message)}}
 function renderUsers(){$('usersBody').innerHTML=users.map(u=>`<tr><td><b>${esc(u.username)}</b><br><span class="small">${esc(uid(u))}</span></td><td>${esc(u.email||'-')}<br>${esc(u.phone||'-')}</td><td>${money(u.balance)} ${esc(u.currency||'USDT')}</td><td>${money(u.frozenAmount)}</td><td>${esc(u.creditScore??100)}</td><td>VIP ${esc(u.vipLevel??0)}</td><td><button class="secondary" onclick="openUser('${uid(u)}')">Settings</button><button class="secondary" onclick="openChat('${uid(u)}')">Chat</button></td></tr>`).join('')||'<tr><td colspan="7">No users</td></tr>'}
 function openUser(id){selected=users.find(u=>uid(u)===id);if(!selected)return;$('userMeta').textContent=(selected.username||'-')+' · '+uid(selected);$('balanceDelta').value='';$('frozen').value=selected.frozenAmount??0;$('credit').value=selected.creditScore??100;$('vip').value=selected.vipLevel??0;$('uib').value=String(Boolean(selected.insufficientBalanceEnabled));$('uit').value=selected.insufficientBalanceTaskNumber||3;$('uia').value=selected.insufficientBalanceRequiredAmount||500;$('uim').value=selected.insufficientBalanceCommissionMultiplier||8;$('userMsg').innerHTML='';$('userModal').classList.add('show')}
@@ -55,6 +86,49 @@ async function openChat(id){chatSelected=chatList.find(u=>uid(u)===id)||users.fi
 async function loadConversation(){if(!chatSelected)return;try{const d=await api('/api/admin/chat/'+uid(chatSelected));const a=d.messages||[];$('chatBody').innerHTML=a.map(m=>`<div class="msg ${m.sender==='admin'?'admin':'user'}">${esc(m.text)}<div class="small">${m.createdAt?new Date(m.createdAt).toLocaleString():''}</div></div>`).join('')||'<div class="muted">No messages.</div>';$('chatBody').scrollTop=$('chatBody').scrollHeight}catch(e){$('chatBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
 async function sendReply(){if(!chatSelected)return alert('Select a user.');const text=$('chatInput').value.trim();if(!text)return;try{await api('/api/admin/chat/'+uid(chatSelected)+'/reply',{method:'POST',body:JSON.stringify({text})});$('chatInput').value='';loadConversation()}catch(e){alert(e.message)}}
 async function loadAudits(){try{const d=await api('/api/admin/audits');const a=d.audits||[];$('auditBody').innerHTML=a.map(x=>`<tr><td>${esc(x.action)}</td><td>${esc(x.targetUserId||'-')}</td><td>${esc(x.details||'-')}</td><td>${x.createdAt?new Date(x.createdAt).toLocaleString():'-'}</td></tr>`).join('')}catch(e){msg('auditMsg',e.message)}}
+
+async function loadAdminManagement(){
+  if(currentAdmin?.adminType!=='superadmin') return;
+  try{
+    const [a,c]=await Promise.all([api('/api/admin/second-admins'),api('/api/admin/invite-codes')]);
+    secondAdmins=a.admins||[]; inviteCodes=c.invites||[];
+    $('adminsBody').innerHTML=secondAdmins.map(x=>`<tr>
+      <td><b>${esc(x.username)}</b><br><span class="small">${esc(x._id||x.id)}</span></td>
+      <td>${x.active?'Active':'Disabled'}</td><td>${esc(x.userCount??0)}</td>
+      <td>${x.createdAt?new Date(x.createdAt).toLocaleString():'-'}</td>
+      <td><button class="secondary" onclick="selectInviteOwner('${esc(x._id||x.id)}')">Generate</button>
+      <button class="${x.active?'danger':'success'}" onclick="setAdminStatus('${esc(x._id||x.id)}',${!x.active})">${x.active?'Disable':'Enable'}</button></td>
+    </tr>`).join('')||'<tr><td colspan="5">No second admins</td></tr>';
+    $('inviteOwner').innerHTML=secondAdmins.filter(x=>x.active).map(x=>`<option value="${esc(x._id||x.id)}">${esc(x.username)}</option>`).join('')||'<option value="">No active second admin</option>';
+    $('invitesBody').innerHTML=inviteCodes.map(x=>`<tr>
+      <td><b>${esc(x.code)}</b></td><td>${esc(x.ownerAdminUsername||x.ownerAdminId||'-')}</td>
+      <td>${x.active?'Active':'Revoked'}${x.usedAt?' / Used':''}</td>
+      <td>${x.usedBy?esc(x.usedBy):'-'}</td><td>${x.createdAt?new Date(x.createdAt).toLocaleString():'-'}</td>
+      <td>${x.active?`<button class="danger" onclick="revokeInvite('${esc(x._id)}')">Revoke</button>`:'-'}</td>
+    </tr>`).join('')||'<tr><td colspan="6">No invite codes</td></tr>';
+  }catch(e){msg('adminMsg',e.message)}
+}
+function selectInviteOwner(id){$('inviteOwner').value=id;createInviteCode()}
+async function createSecondAdmin(){
+  if(currentAdmin?.adminType!=='superadmin')return;
+  const username=$('newAdminUsername').value.trim(),password=$('newAdminPassword').value;
+  if(!username||!password)return msg('adminMsg','Enter username and password.');
+  try{const d=await api('/api/admin/second-admins',{method:'POST',body:JSON.stringify({username,password})});$('newAdminUsername').value='';$('newAdminPassword').value='';msg('adminMsg','Second Admin "'+d.admin.username+'" created successfully.',true);await loadAdminManagement()}catch(e){msg('adminMsg',e.message)}
+}
+async function setAdminStatus(id,active){
+  if(!confirm((active?'Enable':'Disable')+' this Second Admin?'))return;
+  try{await api('/api/admin/second-admins/'+id+'/status',{method:'POST',body:JSON.stringify({active})});await loadAdminManagement()}catch(e){msg('adminMsg',e.message)}
+}
+async function createInviteCode(){
+  if(currentAdmin?.adminType!=='superadmin')return;
+  const ownerAdminId=$('inviteOwner').value;
+  if(!ownerAdminId)return msg('adminMsg','Create a Second Admin first.');
+  try{const d=await api('/api/admin/invite-codes',{method:'POST',body:JSON.stringify({ownerAdminId})});msg('adminMsg','Invite Code created: '+d.invite.code,true);await loadAdminManagement()}catch(e){msg('adminMsg',e.message)}
+}
+async function revokeInvite(id){
+  if(!confirm('Revoke this invite code?'))return;
+  try{await api('/api/admin/invite-codes/'+id+'/revoke',{method:'POST'});await loadAdminManagement()}catch(e){msg('adminMsg',e.message)}
+}
 $('lp').addEventListener('keydown',e=>{if(e.key==='Enter')login()});if(token)start();
 </script>
 </body></html>
