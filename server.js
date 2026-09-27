@@ -9,7 +9,39 @@ const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static('public'));
+app.disable('x-powered-by');
 
+app.get('/health', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        service: 'Zonguru Admin Server',
+        status: 'unhealthy',
+        database: 'disconnected'
+      });
+    }
+
+    await mongoose.connection.db.admin().ping();
+
+    res.status(200).json({
+      success: true,
+      service: 'Zonguru Admin Server',
+      status: 'online',
+      database: 'connected',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('health check:', error.message);
+
+    res.status(503).json({
+      success: false,
+      service: 'Zonguru Admin Server',
+      status: 'unhealthy',
+      database: 'error'
+    });
+  }
+});
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'CHANGE_THIS_JWT_SECRET';
 const MONGO_URL = process.env.MONGO_URL;
