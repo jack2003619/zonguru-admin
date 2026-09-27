@@ -110,7 +110,7 @@ function tokenFor(admin) {
   return jwt.sign(
     { id: admin.id, username: admin.username, role: 'admin' },
     JWT_SECRET,
-    { expiresIn: '12h' }
+    { expiresIn: '30d' }
   );
 }
 
