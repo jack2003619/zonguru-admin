@@ -11,6 +11,22 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.static('public'));
 app.disable('x-powered-by');
 
+app.get('/health/db-check', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1)
+      return res.status(503).json({ success: false, database: 'disconnected' });
+    const count = await User.countDocuments();
+    res.json({
+      success: true,
+      databaseName: mongoose.connection.name,
+      userCount: count,
+      readyState: mongoose.connection.readyState
+    });
+  } catch (error) {
+    res.status(503).json({ success: false, message: 'Database check failed' });
+  }
+});
+
 app.get('/health', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
