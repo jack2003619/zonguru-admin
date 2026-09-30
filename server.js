@@ -146,6 +146,12 @@ const Product = mongoose.model('AdminProduct', productSchema);
 const Transaction = mongoose.model('AdminTransaction', txSchema);
 const Message = mongoose.model('AdminMessage', msgSchema);
 const Audit = mongoose.model('AdminAudit', auditSchema);
+const platformSettingSchema = new mongoose.Schema({
+  key: { type: String, unique: true, index: true },
+  value: { type: mongoose.Schema.Types.Mixed, default: null },
+  updatedAt: { type: Date, default: Date.now }
+}, { collection: 'platform_settings' });
+const PlatformSetting = mongoose.model('AdminPlatformSetting', platformSettingSchema);
 const adminAccountSchema = new mongoose.Schema({
   username: { type: String, unique: true, index: true, trim: true },
   passwordHash: { type: String, required: true },
@@ -268,6 +274,34 @@ async function audit(admin, action, details, extra = {}) {
     console.error('Audit error:', error.message);
   }
 }
+
+app.get('/api/admin/deposit-addresses', auth, async (req,res)=>{
+  try{
+    const setting=await PlatformSetting.findOne({key:'deposit_addresses'}).lean();
+    const addresses=setting?.value||{};
+    res.json({success:true,addresses});
+  }catch(e){res.status(500).json({success:false,message:'Failed to load deposit addresses'});}
+});
+
+app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{
+  try{
+    const body=req.body||{};
+    const addresses={
+      'USDT-TRC20':String(body['USDT-TRC20']||'').trim(),
+      'USDT-ERC20':String(body['USDT-ERC20']||'').trim(),
+      'ETH-ERC20':String(body['ETH-ERC20']||'').trim(),
+      'BTC-BTC':String(body['BTC-BTC']||'').trim()
+    };
+    if(Object.values(addresses).some(v=>!v)) return res.status(400).json({success:false,message:'All deposit addresses are required.'});
+    const setting=await PlatformSetting.findOneAndUpdate(
+      {key:'deposit_addresses'},
+      {$set:{value:addresses,updatedAt:new Date()}},
+      {upsert:true,new:true,setDefaultsOnInsert:true}
+    );
+    await audit(req.admin,'DEPOSIT_ADDRESSES_UPDATE','Updated platform crypto deposit addresses');
+    res.json({success:true,addresses:setting.value});
+  }catch(e){console.error('Deposit address update:',e.message);res.status(500).json({success:false,message:'Failed to save deposit addresses'});}
+});
 
 app.get('/', (req, res) => {
   res.json({ success: true, service: 'Zonguru Admin Server', status: 'online' });
