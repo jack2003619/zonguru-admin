@@ -61,6 +61,8 @@ app.get('/health', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'CHANGE_THIS_JWT_SECRET';
 const MONGO_URL = process.env.MONGO_URL;
+const BACKEND_URL = process.env.BACKEND_URL || "https://zonguru-jack-api.onrender.com";
+const DEPOSIT_SETTINGS_KEY = process.env.DEPOSIT_SETTINGS_KEY || "";
 const ADMIN_USERNAME = String(process.env.ADMIN_USERNAME || 'admin').trim();
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '');
 
@@ -277,14 +279,19 @@ async function audit(admin, action, details, extra = {}) {
 
 app.get('/api/admin/deposit-addresses', auth, async (req,res)=>{
   try{
-    const setting=await PlatformSetting.findOne({key:'deposit_addresses'}).lean();
-    const addresses=setting?.value||{};
-    res.json({success:true,addresses});
-  }catch(e){res.status(500).json({success:false,message:'Failed to load deposit addresses'});}
+    const r=await fetch(BACKEND_URL+'/api/public/deposit-addresses');
+    const data=await r.json();
+    if(!r.ok||!data.success) return res.status(502).json({success:false,message:'Failed to load deposit addresses'});
+    res.json(data);
+  }catch(e){
+    console.error('Deposit address load:',e.message);
+    res.status(502).json({success:false,message:'Failed to load deposit addresses'});
+  }
 });
 
 app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{
   try{
+    if(!DEPOSIT_SETTINGS_KEY) return res.status(500).json({success:false,message:'Deposit settings key is not configured'});
     const body=req.body||{};
     const addresses={
       'USDT-TRC20':String(body['USDT-TRC20']||'').trim(),
@@ -293,14 +300,19 @@ app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{
       'BTC-BTC':String(body['BTC-BTC']||'').trim()
     };
     if(Object.values(addresses).some(v=>!v)) return res.status(400).json({success:false,message:'All deposit addresses are required.'});
-    const setting=await PlatformSetting.findOneAndUpdate(
-      {key:'deposit_addresses'},
-      {$set:{value:addresses,updatedAt:new Date()}},
-      {upsert:true,new:true,setDefaultsOnInsert:true}
-    );
+    const r=await fetch(BACKEND_URL+'/api/internal/deposit-addresses',{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','x-deposit-settings-key':DEPOSIT_SETTINGS_KEY},
+      body:JSON.stringify(addresses)
+    });
+    const data=await r.json();
+    if(!r.ok||!data.success) return res.status(502).json({success:false,message:data.message||'Failed to save deposit addresses'});
     await audit(req.admin,'DEPOSIT_ADDRESSES_UPDATE','Updated platform crypto deposit addresses');
-    res.json({success:true,addresses:setting.value});
-  }catch(e){console.error('Deposit address update:',e.message);res.status(500).json({success:false,message:'Failed to save deposit addresses'});}
+    res.json(data);
+  }catch(e){
+    console.error('Deposit address update:',e.message);
+    res.status(500).json({success:false,message:'Failed to save deposit addresses'});
+  }
 });
 
 app.get('/', (req, res) => {
