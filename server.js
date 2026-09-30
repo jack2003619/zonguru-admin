@@ -127,6 +127,7 @@ const msgSchema = new mongoose.Schema({
   subject: { type: String, default: 'Customer Service' },
   sender: String,
   text: String,
+  image: { type: String, default: '' },
   read: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 }, { collection: 'messages', strict: false });
@@ -561,8 +562,14 @@ app.get('/api/admin/transactions', auth, async (req, res) => {
   try {
     const userIds = await getScopedUserIds(req);
     const filter = userIds ? { userId: { $in: userIds } } : {};
-    const transactions = await Transaction.find(filter).sort({ createdAt: -1 }).limit(500);
-    res.json({ success: true, transactions });
+    const transactions = await Transaction.find(filter).sort({ createdAt: -1 }).limit(500).lean();
+    const ids=[...new Set(transactions.map(t=>String(t.userId||'')).filter(Boolean))];
+    const usersById=new Map((await User.find({_id:{$in:ids}}).select('username email phone').lean()).map(u=>[String(u._id),u]));
+    const enriched=transactions.map(t=>{
+      const u=usersById.get(String(t.userId||''));
+      return {...t,user:{id:t.userId,username:u?.username||'',email:u?.email||'',phone:u?.phone||''}};
+    });
+    res.json({ success: true, transactions:enriched });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to load transactions' });
   }
