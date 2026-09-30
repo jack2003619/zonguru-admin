@@ -177,6 +177,8 @@ const taskProgressSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 }, { collection: 'taskprogresses', strict: false });
 const TaskProgress = mongoose.model('AdminTaskProgress', taskProgressSchema);
+const orderSchema = new mongoose.Schema({ userId: mongoose.Schema.Types.ObjectId, productId: mongoose.Schema.Types.ObjectId, productName:String, amount:Number, profitRate:Number, commission:Number, baseCommission:Number, commissionMultiplier:Number, availableBalance:Number, shortfall:Number, taskNumber:Number, reviewText:String, status:String, createdAt:Date, completedAt:Date }, { collection:"orders", strict:false });
+const Order = mongoose.model('AdminOrder', orderSchema);
 
 function tokenFor(admin) {
   return jwt.sign(
@@ -443,7 +445,11 @@ app.post('/api/admin/invite-codes/:id/revoke', auth, async (req, res) => {
 
 app.get('/api/admin/users', auth, async (req, res) => {
   try {
-    const users = await User.find(scopedUserFilter(req)).select('-passwordHash').sort({ createdAt: -1 });
+    const users = await User.find(scopedUserFilter(req)).select('-passwordHash').sort({ createdAt: -1 }).lean();
+    const ids=users.map(u=>u._id);
+    const counts=await Order.aggregate([{ $match:{ userId:{ $in:ids } } },{ $group:{ _id:"$userId", count:{ $sum:1 } } }]);
+    const countMap=new Map(counts.map(x=>[String(x._id),x.count]));
+    users.forEach(u=>{u.orderCount=Number(countMap.get(String(u._id))||0);});
     res.json({ success: true, users });
   } catch (error) {
     console.error('Load users:', error.message);
@@ -470,6 +476,26 @@ async function adjustBalance(req, res) {
     res.status(500).json({ success: false, message: 'Balance update failed' });
   }
 }
+app.get('/api/admin/users/search', auth, async (req,res)=>{
+  try{
+    const q=String(req.query.q||'').trim();
+    const base=scopedUserFilter(req);
+    const filter=q?{...base,$or:[{username:{$regex:q,$options:'i'}},{email:{$regex:q,$options:'i'}},{phone:{$regex:q,$options:'i'}},{_id:mongoose.isValidObjectId(q)?q:null}].filter(x=>!('_id' in x)||x._id)}:base;
+    const users=await User.find(filter).select('-passwordHash').sort({createdAt:-1}).limit(200).lean();
+    const ids=users.map(u=>u._id); const counts=await Order.aggregate([{$match:{userId:{$in:ids}}},{$group:{_id:'$userId',count:{$sum:1}}}]);
+    const cm=new Map(counts.map(x=>[String(x._id),x.count])); users.forEach(u=>u.orderCount=Number(cm.get(String(u._id))||0));
+    res.json({success:true,users});
+  }catch(e){res.status(500).json({success:false,message:'User search failed'});}
+});
+
+app.get('/api/admin/users/:id/history', auth, async (req,res)=>{
+  try{
+    const user=await findScopedUser(req,req.params.id); if(!user)return res.status(404).json({success:false,message:'User not found'});
+    const orders=await Order.find({userId:user._id}).sort({createdAt:-1}).limit(500).lean();
+    res.json({success:true,user:{id:user._id,username:user.username,active:user.active!==false,lastLoginIp:user.lastLoginIp||'',lastLoginAt:user.lastLoginAt||null,orderCount:orders.length},orders});
+  }catch(e){res.status(500).json({success:false,message:'Failed to load order history'});}
+});
+
 app.post('/api/admin/users/:id/balance-adjust', auth, adjustBalance);
 app.post('/api/admin/users/:id/balance', auth, adjustBalance);
 
@@ -562,6 +588,11 @@ app.get('/api/admin/transactions', auth, async (req, res) => {
   try {
     const userIds = await getScopedUserIds(req);
     const filter = userIds ? { userId: { $in: userIds } } : {};
+    const q=String(req.query.q||"").trim();
+    if(q){
+      const matchingUsers=await User.find({...scopedUserFilter(req),$or:[{username:{$regex:q,$options:"i"}},{email:{$regex:q,$options:"i"}},{phone:{$regex:q,$options:"i"}}]}).select("_id").lean();
+      filter.$or=[{userId:{$in:matchingUsers.map(u=>u._id)}},{type:{$regex:q,$options:"i"}},{status:{$regex:q,$options:"i"}}];
+    }
     const transactions = await Transaction.find(filter).sort({ createdAt: -1 }).limit(500).lean();
     const ids=[...new Set(transactions.map(t=>String(t.userId||'')).filter(Boolean))];
     const usersById=new Map((await User.find({_id:{$in:ids}}).select('username email phone').lean()).map(u=>[String(u._id),u]));
