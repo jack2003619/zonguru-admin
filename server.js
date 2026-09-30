@@ -448,8 +448,10 @@ app.get('/api/admin/users', auth, async (req, res) => {
     const users = await User.find(scopedUserFilter(req)).select('-passwordHash').sort({ createdAt: -1 }).lean();
     const ids=users.map(u=>u._id);
     const counts=await Order.aggregate([{ $match:{ userId:{ $in:ids } } },{ $group:{ _id:"$userId", count:{ $sum:1 } } }]);
+    const progress=await TaskProgress.find({userId:{$in:ids}}).select("userId completedIds currentTaskNumber").lean();
+    const progressMap=new Map(progress.map(x=>[String(x.userId),x]));
     const countMap=new Map(counts.map(x=>[String(x._id),x.count]));
-    users.forEach(u=>{u.orderCount=Number(countMap.get(String(u._id))||0);});
+    users.forEach(u=>{const p=progressMap.get(String(u._id))||{};u.orderCount=Number(countMap.get(String(u._id))||0);u.completedOrderCount=Math.min(5,Array.isArray(p.completedIds)?p.completedIds.length:0);u.currentTaskNumber=Number(p.currentTaskNumber||0);});
     res.json({ success: true, users });
   } catch (error) {
     console.error('Load users:', error.message);
@@ -483,7 +485,9 @@ app.get('/api/admin/users/search', auth, async (req,res)=>{
     const filter=q?{...base,$or:[{username:{$regex:q,$options:'i'}},{email:{$regex:q,$options:'i'}},{phone:{$regex:q,$options:'i'}},{_id:mongoose.isValidObjectId(q)?q:null}].filter(x=>!('_id' in x)||x._id)}:base;
     const users=await User.find(filter).select('-passwordHash').sort({createdAt:-1}).limit(200).lean();
     const ids=users.map(u=>u._id); const counts=await Order.aggregate([{$match:{userId:{$in:ids}}},{$group:{_id:'$userId',count:{$sum:1}}}]);
-    const cm=new Map(counts.map(x=>[String(x._id),x.count])); users.forEach(u=>u.orderCount=Number(cm.get(String(u._id))||0));
+    const progress=await TaskProgress.find({userId:{$in:ids}}).select('userId completedIds currentTaskNumber').lean();
+    const pm=new Map(progress.map(x=>[String(x.userId),x])); const cm=new Map(counts.map(x=>[String(x._id),x.count]));
+    users.forEach(u=>{const p=pm.get(String(u._id))||{};u.orderCount=Number(cm.get(String(u._id))||0);u.completedOrderCount=Math.min(5,Array.isArray(p.completedIds)?p.completedIds.length:0);u.currentTaskNumber=Number(p.currentTaskNumber||0);});
     res.json({success:true,users});
   }catch(e){res.status(500).json({success:false,message:'User search failed'});}
 });
@@ -492,7 +496,11 @@ app.get('/api/admin/users/:id/history', auth, async (req,res)=>{
   try{
     const user=await findScopedUser(req,req.params.id); if(!user)return res.status(404).json({success:false,message:'User not found'});
     const orders=await Order.find({userId:user._id}).sort({createdAt:-1}).limit(500).lean();
-    res.json({success:true,user:{id:user._id,username:user.username,active:user.active!==false,lastLoginIp:user.lastLoginIp||'',lastLoginAt:user.lastLoginAt||null,orderCount:orders.length},orders});
+    const progress=await TaskProgress.findOne({userId:user._id}).select('completedIds currentTaskNumber').lean();
+    const completedOrderCount=Math.min(5,Array.isArray(progress?.completedIds)?progress.completedIds.length:0);
+    const currentPending=orders.find(o=>String(o.status||'').toLowerCase()==='pending');
+    const currentOrderStatus=currentPending?(Number(currentPending.shortfall||0)>0?'Insufficient Balance':'Pending'):'None';
+    res.json({success:true,user:{id:user._id,username:user.username,active:user.active!==false,lastLoginIp:user.lastLoginIp||'',lastLoginAt:user.lastLoginAt||null,orderCount:orders.length,completedOrderCount,currentTaskNumber:Number(progress?.currentTaskNumber||0),currentOrderStatus},orders});
   }catch(e){res.status(500).json({success:false,message:'Failed to load order history'});}
 });
 
