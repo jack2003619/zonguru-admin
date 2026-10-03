@@ -193,7 +193,7 @@ const TaskProgress = mongoose.model('AdminTaskProgress', taskProgressSchema);
 const orderSchema = new mongoose.Schema({ userId: mongoose.Schema.Types.ObjectId, productId: mongoose.Schema.Types.ObjectId, productName:String, amount:Number, profitRate:Number, commission:Number, baseCommission:Number, commissionMultiplier:Number, availableBalance:Number, shortfall:Number, taskNumber:Number, reviewText:String, status:String, createdAt:Date, completedAt:Date }, { collection:"orders", strict:false });
 const Order = mongoose.model('AdminOrder', orderSchema);
 
-const SUPPORTED_CURRENCIES=["USDT","USD","MXN","EUR","GBP","CAD","AUD","JPY","CNY","SGD","THB","MYR","BRL","INR"];
+const SUPPORTED_CURRENCIES=["USDT","USD","MXN","EUR","GBP","CAD","AUD","JPY","CNY","SGD","THB","MYR","BRL","INR","EGP"];
 function normCurrency(v){const x=String(v||"USDT").trim().toUpperCase();return SUPPORTED_CURRENCIES.includes(x)?x:"USDT";}
 function walletMap(user){
   const raw=(user.balances&&typeof user.balances==="object"&&!Array.isArray(user.balances))?user.balances:{},out={};
@@ -678,7 +678,7 @@ app.post('/api/admin/transactions/:id/approve', auth, async (req,res)=>{
     const user=await findScopedUser(req,transaction.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
     const amount=Number(transaction.amount||0),currency=normCurrency(transaction.currency||transaction.details?.currency||user.currency),type=String(transaction.type||'').toLowerCase(),w=walletMap(user);
     if(type==='deposit')setWalletBalance(user,currency,Number(w[currency]||0)+amount);
-    if(type==='withdraw'||type==='withdrawal'&&!transaction.reserved){if(Number(w[currency]||0)<amount)return res.status(400).json({success:false,message:'User balance is insufficient'});setWalletBalance(user,currency,Number(w[currency]||0)-amount);}
+    if((type==='withdraw'||type==='withdrawal')&&!transaction.reserved){if(Number(w[currency]||0)<amount)return res.status(400).json({success:false,message:'User balance is insufficient'});setWalletBalance(user,currency,Number(w[currency]||0)-amount);}
     syncLegacyBalance(user);transaction.currency=currency;transaction.status='approved';transaction.reviewedAt=new Date();await user.save();await transaction.save();
     await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:type==='deposit'?'Deposit request was approved.':'Withdrawal request was approved.',read:false});
     await audit(req.admin,'TRANSACTION_APPROVE',`${transaction.type} ${amount} ${currency}`,{targetUserId:user._id,targetTransactionId:transaction._id});
