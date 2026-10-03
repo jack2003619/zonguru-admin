@@ -79,6 +79,8 @@ function cleanUser(user) {
   if (!user) return null;
   const data = user.toObject ? user.toObject() : { ...user };
   delete data.passwordHash;
+  const w=walletMap(user),cur=normCurrency(user.currency);
+  data.currency=cur;data.balances=w;data.balance=Number(w[cur]||0);
   return data;
 }
 
@@ -198,8 +200,13 @@ function normCurrency(v){const x=String(v||"USDT").trim().toUpperCase();return S
 function walletMap(user){
   const raw=(user.balances&&typeof user.balances==="object"&&!Array.isArray(user.balances))?user.balances:{},out={};
   for(const k of Object.keys(raw)){const n=Number(raw[k]);if(Number.isFinite(n))out[normCurrency(k)]=Number(n.toFixed(2));}
-  const cur=normCurrency(user.currency);if(!Number.isFinite(out[cur]))out[cur]=Number(user.balance||0);
+  const cur=normCurrency(user.currency);
+  // balances[currency] is canonical; legacy user.balance is only a mirror.
+  if(!Object.prototype.hasOwnProperty.call(out,cur))out[cur]=Number(Number(user.balance||0).toFixed(2));
   return out;
+}
+function normalizeWalletState(user){
+  const w=walletMap(user);user.balances=w;user.balance=Number(w[normCurrency(user.currency)]||0);return w;
 }
 function setWalletBalance(user,currency,amount){
   const cur=normCurrency(currency),w=walletMap(user),n=Number(amount);
@@ -532,7 +539,7 @@ async function adjustBalance(req, res) {
     const user=await findScopedUser(req,req.params.id); if(!user)return res.status(404).json({success:false,message:'User not found'});
     const w=walletMap(user),next=Number((Number(w[currency]||0)+delta).toFixed(2));
     if(next<0)return res.status(400).json({success:false,message:'Balance cannot be negative',currency,currentBalance:Number(w[currency]||0)});
-    setWalletBalance(user,currency,next);syncLegacyBalance(user);await user.save();
+    setWalletBalance(user,currency,next);normalizeWalletState(user);await user.save();
     await audit(req.admin,delta>0?'BALANCE_ADD':'BALANCE_SUBTRACT',`${delta>0?'+':''}${delta.toFixed(2)} ${currency}; new balance ${next.toFixed(2)}`,{targetUserId:user._id});
     res.json({success:true,user:cleanUser(user),currency,amount:delta,newBalance:next});
   }catch(error){console.error('Balance update:',error.message);res.status(500).json({success:false,message:'Balance update failed'});}
@@ -680,7 +687,7 @@ app.post('/api/admin/transactions/:id/approve', auth, async (req,res)=>{
     const amount=Number(transaction.amount||0),currency=normCurrency(transaction.currency||transaction.details?.currency||user.currency),type=String(transaction.type||'').toLowerCase(),w=walletMap(user);
     if(type==='deposit')setWalletBalance(user,currency,Number(w[currency]||0)+amount);
     if((type==='withdraw'||type==='withdrawal')&&!transaction.reserved){if(Number(w[currency]||0)<amount)return res.status(400).json({success:false,message:'User balance is insufficient'});setWalletBalance(user,currency,Number(w[currency]||0)-amount);}
-    syncLegacyBalance(user);transaction.currency=currency;transaction.status='approved';transaction.reviewedAt=new Date();await user.save();await transaction.save();
+    normalizeWalletState(user);transaction.currency=currency;transaction.status='approved';transaction.reviewedAt=new Date();await user.save();await transaction.save();
     await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:type==='deposit'?'Deposit request was approved.':'Withdrawal request was approved.',read:false});
     await audit(req.admin,'TRANSACTION_APPROVE',`${transaction.type} ${amount} ${currency}`,{targetUserId:user._id,targetTransactionId:transaction._id});
     res.json({success:true,message:'Transaction approved',transaction,user:cleanUser(user)});
@@ -692,7 +699,7 @@ app.post('/api/admin/transactions/:id/reject', auth, async (req,res)=>{
     const user=await findScopedUser(req,transaction.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
     const reason=String(req.body.reason||req.body.note||'').trim();if(reason.length>1000)return res.status(400).json({success:false,message:'Rejection reason is too long'});
     const currency=normCurrency(transaction.currency||transaction.details?.currency||user.currency);
-    if(String(transaction.type||'').toLowerCase()==='withdrawal'&&transaction.reserved){const w=walletMap(user);setWalletBalance(user,currency,Number(w[currency]||0)+Number(transaction.amount||0));syncLegacyBalance(user);await user.save();}
+    if(String(transaction.type||'').toLowerCase()==='withdrawal'&&transaction.reserved){const w=walletMap(user);setWalletBalance(user,currency,Number(w[currency]||0)+Number(transaction.amount||0));normalizeWalletState(user);await user.save();}
     transaction.currency=currency;transaction.status='rejected';transaction.rejectionReason=reason;transaction.note=reason;transaction.reviewedAt=new Date();await transaction.save();
     await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:(transaction.type==='deposit'?'Deposit request was rejected.':'Withdrawal request was rejected.')+(reason?' Reason: '+reason:''),read:false});
     await audit(req.admin,'TRANSACTION_REJECT',`${transaction.type} ${transaction.amount} ${currency}${reason?' - '+reason:''}`,{targetUserId:user._id,targetTransactionId:transaction._id});
