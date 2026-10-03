@@ -94,6 +94,7 @@ const userSchema = new mongoose.Schema({
   creditScore: { type: Number, default: 100 },
   vipLevel: { type: Number, default: 0, min: 0, max: 3 },
   currency: { type: String, default: 'USDT' },
+  balances: { type: mongoose.Schema.Types.Mixed, default: {} },
   totalProfit: { type: Number, default: 0 },
   referralCode: String,
   referredBy: String,
@@ -119,9 +120,13 @@ const txSchema = new mongoose.Schema({
   userId: mongoose.Schema.Types.ObjectId,
   type: String,
   amount: Number,
+  currency: { type: String, default: 'USDT' },
   status: String,
   note: String,
-  createdAt: { type: Date, default: Date.now }
+  rejectionReason: { type: String, default: '' },
+  reserved: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+  reviewedAt: Date
 }, { collection: 'transactions', strict: false });
 
 const msgSchema = new mongoose.Schema({
@@ -188,6 +193,20 @@ const TaskProgress = mongoose.model('AdminTaskProgress', taskProgressSchema);
 const orderSchema = new mongoose.Schema({ userId: mongoose.Schema.Types.ObjectId, productId: mongoose.Schema.Types.ObjectId, productName:String, amount:Number, profitRate:Number, commission:Number, baseCommission:Number, commissionMultiplier:Number, availableBalance:Number, shortfall:Number, taskNumber:Number, reviewText:String, status:String, createdAt:Date, completedAt:Date }, { collection:"orders", strict:false });
 const Order = mongoose.model('AdminOrder', orderSchema);
 
+const SUPPORTED_CURRENCIES=["USDT","USD","MXN","EUR","GBP","CAD","AUD","JPY","CNY","SGD","THB","MYR","BRL","INR"];
+function normCurrency(v){const x=String(v||"USDT").trim().toUpperCase();return SUPPORTED_CURRENCIES.includes(x)?x:"USDT";}
+function walletMap(user){
+  const raw=(user.balances&&typeof user.balances==="object"&&!Array.isArray(user.balances))?user.balances:{},out={};
+  for(const k of Object.keys(raw)){const n=Number(raw[k]);if(Number.isFinite(n))out[normCurrency(k)]=Number(n.toFixed(2));}
+  const cur=normCurrency(user.currency);if(!Number.isFinite(out[cur]))out[cur]=Number(user.balance||0);
+  return out;
+}
+function setWalletBalance(user,currency,amount){
+  const cur=normCurrency(currency),w=walletMap(user),n=Number(amount);
+  if(!Number.isFinite(n)||n<0)throw new Error("Invalid balance amount");
+  w[cur]=Number(n.toFixed(2));user.balances=w;if(normCurrency(user.currency)===cur)user.balance=w[cur];
+}
+function syncLegacyBalance(user){const cur=normCurrency(user.currency),w=walletMap(user);user.balances=w;user.balance=Number(w[cur]||0);}
 function tokenFor(admin) {
   return jwt.sign(
     {
@@ -507,22 +526,15 @@ app.get('/api/admin/users', auth, async (req, res) => {
 
 async function adjustBalance(req, res) {
   try {
-    const delta = Number(req.body.delta);
-    if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ success: false, message: 'Invalid balance adjustment' });
-    const user = await findScopedUser(req, req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    const nextBalance = Number((Number(user.balance || 0) + delta).toFixed(2));
-    if (nextBalance < 0) return res.status(400).json({ success: false, message: 'Balance cannot be negative' });
-    user.balance = nextBalance;
-    await user.save();
-    await audit(req.admin, delta > 0 ? 'BALANCE_ADD' : 'BALANCE_SUBTRACT',
-      `${delta > 0 ? '+' : ''}${delta.toFixed(2)} ${user.currency}; new balance ${nextBalance.toFixed(2)}`,
-      { targetUserId: user._id });
-    res.json({ success: true, user: { id: user._id, username: user.username, balance: user.balance, currency: user.currency } });
-  } catch (error) {
-    console.error('Balance update:', error.message);
-    res.status(500).json({ success: false, message: 'Balance update failed' });
-  }
+    const delta = Number(req.body.delta), currency=normCurrency(req.body.currency);
+    if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ success:false,message:'Invalid balance adjustment' });
+    const user=await findScopedUser(req,req.params.id); if(!user)return res.status(404).json({success:false,message:'User not found'});
+    const w=walletMap(user),next=Number((Number(w[currency]||0)+delta).toFixed(2));
+    if(next<0)return res.status(400).json({success:false,message:'Balance cannot be negative',currency,currentBalance:Number(w[currency]||0)});
+    setWalletBalance(user,currency,next);syncLegacyBalance(user);await user.save();
+    await audit(req.admin,delta>0?'BALANCE_ADD':'BALANCE_SUBTRACT',`${delta>0?'+':''}${delta.toFixed(2)} ${currency}; new balance ${next.toFixed(2)}`,{targetUserId:user._id});
+    res.json({success:true,user:cleanUser(user),currency,amount:delta,newBalance:next});
+  }catch(error){console.error('Balance update:',error.message);res.status(500).json({success:false,message:'Balance update failed'});}
 }
 app.get('/api/admin/users/search', auth, async (req,res)=>{
   try{
@@ -660,64 +672,32 @@ app.get('/api/admin/transactions', auth, async (req, res) => {
   }
 });
 
-app.post('/api/admin/transactions/:id/approve', auth, async (req, res) => {
-  try {
-    const transaction = await Transaction.findById(req.params.id);
-    if (!transaction || transaction.status !== 'pending')
-      return res.status(400).json({ success: false, message: 'Transaction is not pending' });
-    const user = await findScopedUser(req, transaction.userId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
-    const amount = Number(transaction.amount || 0);
-    const type = String(transaction.type || '').toLowerCase();
-    if (type === 'deposit') user.balance = Number((Number(user.balance || 0) + amount).toFixed(2));
-    if (type === 'withdraw' || type === 'withdrawal') {
-      if (Number(user.balance || 0) < amount)
-        return res.status(400).json({ success: false, message: 'User balance is insufficient' });
-      user.balance = Number((Number(user.balance || 0) - amount).toFixed(2));
-    }
-    transaction.status = 'approved';
-    await user.save();
-    await transaction.save();
-    await Message.create({
-      userId: user._id, subject: 'Customer Service', sender: 'admin',
-      text: type === 'deposit' ? 'Deposit request was approved.' : 'Withdrawal request was approved.',
-      read: false
-    });
-    await audit(req.admin, 'TRANSACTION_APPROVE', `${transaction.type} ${amount}`,
-      { targetUserId: user._id, targetTransactionId: transaction._id });
-    res.json({ success: true, message: 'Transaction approved' });
-  } catch (error) {
-    console.error('Approve transaction:', error.message);
-    res.status(500).json({ success: false, message: 'Transaction approval failed' });
-  }
+app.post('/api/admin/transactions/:id/approve', auth, async (req,res)=>{
+  try{
+    const transaction=await Transaction.findById(req.params.id);if(!transaction||transaction.status!=='pending')return res.status(400).json({success:false,message:'Transaction is not pending'});
+    const user=await findScopedUser(req,transaction.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
+    const amount=Number(transaction.amount||0),currency=normCurrency(transaction.currency||transaction.details?.currency||user.currency),type=String(transaction.type||'').toLowerCase(),w=walletMap(user);
+    if(type==='deposit')setWalletBalance(user,currency,Number(w[currency]||0)+amount);
+    if(type==='withdraw'||type==='withdrawal'&&!transaction.reserved){if(Number(w[currency]||0)<amount)return res.status(400).json({success:false,message:'User balance is insufficient'});setWalletBalance(user,currency,Number(w[currency]||0)-amount);}
+    syncLegacyBalance(user);transaction.currency=currency;transaction.status='approved';transaction.reviewedAt=new Date();await user.save();await transaction.save();
+    await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:type==='deposit'?'Deposit request was approved.':'Withdrawal request was approved.',read:false});
+    await audit(req.admin,'TRANSACTION_APPROVE',`${transaction.type} ${amount} ${currency}`,{targetUserId:user._id,targetTransactionId:transaction._id});
+    res.json({success:true,message:'Transaction approved',transaction,user:cleanUser(user)});
+  }catch(error){console.error('Approve transaction:',error.message);res.status(500).json({success:false,message:'Transaction approval failed'});}
 });
-
-app.post('/api/admin/transactions/:id/reject', auth, async (req, res) => {
-  try {
-    const transaction = await Transaction.findById(req.params.id);
-    if (!transaction || transaction.status !== 'pending')
-      return res.status(400).json({ success: false, message: 'Transaction is not pending' });
-    if (!await findScopedUser(req, transaction.userId))
-      return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
-    transaction.status = 'rejected';
-    const note = String(req.body.note || '').trim();
-    if (note) transaction.note = `${transaction.note || ''}${transaction.note ? ' | ' : ''}${note}`;
-    await transaction.save();
-    await Message.create({
-      userId: transaction.userId, subject: 'Customer Service', sender: 'admin',
-      text: transaction.type === 'deposit' ? 'Deposit request was rejected.' : 'Withdrawal request was rejected.',
-      read: false
-    });
-    await audit(req.admin, 'TRANSACTION_REJECT',
-      `${transaction.type} ${transaction.amount}${note ? ' - ' + note : ''}`,
-      { targetUserId: transaction.userId, targetTransactionId: transaction._id });
-    res.json({ success: true, message: 'Transaction rejected' });
-  } catch (error) {
-    console.error('Reject transaction:', error.message);
-    res.status(500).json({ success: false, message: 'Transaction rejection failed' });
-  }
+app.post('/api/admin/transactions/:id/reject', auth, async (req,res)=>{
+  try{
+    const transaction=await Transaction.findById(req.params.id);if(!transaction||transaction.status!=='pending')return res.status(400).json({success:false,message:'Transaction is not pending'});
+    const user=await findScopedUser(req,transaction.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
+    const reason=String(req.body.reason||req.body.note||'').trim();if(reason.length>1000)return res.status(400).json({success:false,message:'Rejection reason is too long'});
+    const currency=normCurrency(transaction.currency||transaction.details?.currency||user.currency);
+    if(String(transaction.type||'').toLowerCase()==='withdrawal'&&transaction.reserved){const w=walletMap(user);setWalletBalance(user,currency,Number(w[currency]||0)+Number(transaction.amount||0));syncLegacyBalance(user);await user.save();}
+    transaction.currency=currency;transaction.status='rejected';transaction.rejectionReason=reason;transaction.note=reason;transaction.reviewedAt=new Date();await transaction.save();
+    await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:(transaction.type==='deposit'?'Deposit request was rejected.':'Withdrawal request was rejected.')+(reason?' Reason: '+reason:''),read:false});
+    await audit(req.admin,'TRANSACTION_REJECT',`${transaction.type} ${transaction.amount} ${currency}${reason?' - '+reason:''}`,{targetUserId:user._id,targetTransactionId:transaction._id});
+    res.json({success:true,message:'Transaction rejected',transaction,user:cleanUser(user)});
+  }catch(error){console.error('Reject transaction:',error.message);res.status(500).json({success:false,message:'Transaction rejection failed'});}
 });
-
 app.get('/api/admin/products', auth, async (req, res) => {
   try {
     const products = await Product.find().sort({ price: 1 });
