@@ -526,7 +526,8 @@ app.get('/api/admin/users', auth, async (req, res) => {
 
 async function adjustBalance(req, res) {
   try {
-    const delta = Number(req.body.delta), currency=normCurrency(req.body.currency);
+    // Accept both fields so old and new admin clients can update balances.
+    const delta = Number(req.body.delta ?? req.body.amount), currency=normCurrency(req.body.currency);
     if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ success:false,message:'Invalid balance adjustment' });
     const user=await findScopedUser(req,req.params.id); if(!user)return res.status(404).json({success:false,message:'User not found'});
     const w=walletMap(user),next=Number((Number(w[currency]||0)+delta).toFixed(2));
