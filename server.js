@@ -427,8 +427,18 @@ function bridgeError(res,error){
   return res.status(502).json({success:false,message:'Main backend connection failed: '+(error?.message||'Unknown backend error')});
 }
 
-app.get('/api/admin/users', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users'));}catch(e){bridgeError(res,e);}});
-app.get('/api/admin/transactions', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/transactions'));}catch(e){bridgeError(res,e);}});
+app.get('/api/admin/users', auth, async (req,res)=>{
+  try{
+    const users=await User.find(scopedUserFilter(req)).select('-passwordHash').sort({createdAt:-1});
+    res.json({success:true,users});
+  }catch(e){res.status(500).json({success:false,message:'Failed to load users'});}
+});
+app.get('/api/admin/transactions', auth, async (req,res)=>{
+  try{
+    const transactions=await Transaction.find().sort({createdAt:-1}).limit(500);
+    res.json({success:true,transactions});
+  }catch(e){res.status(500).json({success:false,message:'Failed to load transactions'});}
+});
 app.post('/api/admin/users/:id/balance', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/balance',{method:'POST',body:JSON.stringify({delta:Number(req.body?.delta||0)})}));}catch(e){bridgeError(res,e);}});
 app.post('/api/admin/users/:id/balance-adjust', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/balance',{method:'POST',body:JSON.stringify({delta:Number(req.body?.delta||0)})}));}catch(e){bridgeError(res,e);}});
 app.post('/api/admin/users/:id/financial-settings', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/financial-settings',{method:'POST',body:JSON.stringify(req.body||{})}));}catch(e){bridgeError(res,e);}});
