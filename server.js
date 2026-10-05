@@ -408,12 +408,24 @@ const BACKEND_BRIDGE_SECRET=String(process.env.BACKEND_BRIDGE_SECRET||'');
 async function backendBridge(path, options={}){
   if(!BACKEND_BRIDGE_SECRET) throw new Error('Backend bridge is not configured');
   const headers=Object.assign({'Content-Type':'application/json','X-Zonguru-Admin-Bridge':BACKEND_BRIDGE_SECRET},options.headers||{});
-  const response=await fetch(BACKEND_URL+path,{...options,headers});
-  const data=await response.json().catch(()=>({success:false,message:'Invalid backend response'}));
-  if(!response.ok||data.success===false) throw new Error(data.message||('Backend request failed: '+response.status));
-  return data;
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),12000);
+  try{
+    const response=await fetch(BACKEND_URL+path,{...options,headers,signal:controller.signal});
+    const text=await response.text();
+    let data;
+    try{data=text?JSON.parse(text):{};}catch{throw new Error('Backend returned non-JSON response ('+response.status+')');}
+    if(!response.ok||data.success===false) throw new Error(data.message||('Backend request failed: '+response.status));
+    return data;
+  }catch(e){
+    if(e?.name==='AbortError') throw new Error('Backend request timed out');
+    throw e;
+  }finally{clearTimeout(timer);}
 }
-function bridgeError(res,error){console.error('Backend bridge:',error.message);return res.status(502).json({success:false,message:'Main backend connection failed: '+error.message});}
+function bridgeError(res,error){
+  console.error('Backend bridge:',error?.stack||error?.message||error);
+  return res.status(502).json({success:false,message:'Main backend connection failed: '+(error?.message||'Unknown backend error')});
+}
 
 app.get('/api/admin/users', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users'));}catch(e){bridgeError(res,e);}});
 app.get('/api/admin/transactions', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/transactions'));}catch(e){bridgeError(res,e);}});
