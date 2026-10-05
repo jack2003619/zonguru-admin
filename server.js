@@ -9,60 +9,10 @@ const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: '1mb' }));
 app.use(express.static('public'));
-app.disable('x-powered-by');
 
-app.get('/health/db-check', async (req, res) => {
-  try {
-    if (mongoose.connection.readyState !== 1)
-      return res.status(503).json({ success: false, database: 'disconnected' });
-    const count = await User.countDocuments();
-    res.json({
-      success: true,
-      databaseName: mongoose.connection.name,
-      userCount: count,
-      readyState: mongoose.connection.readyState
-    });
-  } catch (error) {
-    res.status(503).json({ success: false, message: 'Database check failed' });
-  }
-});
-
-app.get('/health', async (req, res) => {
-  try {
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
-        success: false,
-        service: 'Zonguru Admin Server',
-        status: 'unhealthy',
-        database: 'disconnected'
-      });
-    }
-
-    await mongoose.connection.db.admin().ping();
-
-    res.status(200).json({
-      success: true,
-      service: 'Zonguru Admin Server',
-      status: 'online',
-      database: 'connected',
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('health check:', error.message);
-
-    res.status(503).json({
-      success: false,
-      service: 'Zonguru Admin Server',
-      status: 'unhealthy',
-      database: 'error'
-    });
-  }
-});
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'CHANGE_THIS_JWT_SECRET';
 const MONGO_URL = process.env.MONGO_URL;
-const BACKEND_URL = process.env.BACKEND_URL || "https://zonguru-jack-api.onrender.com";
-const DEPOSIT_SETTINGS_KEY = process.env.DEPOSIT_SETTINGS_KEY || "";
 const ADMIN_USERNAME = String(process.env.ADMIN_USERNAME || 'admin').trim();
 const ADMIN_PASSWORD = String(process.env.ADMIN_PASSWORD || '');
 
@@ -79,8 +29,6 @@ function cleanUser(user) {
   if (!user) return null;
   const data = user.toObject ? user.toObject() : { ...user };
   delete data.passwordHash;
-  const w=walletMap(user),cur=normCurrency(user.currency);
-  data.currency=cur;data.balances=w;data.balance=Number(w[cur]||0);
   return data;
 }
 
@@ -96,7 +44,6 @@ const userSchema = new mongoose.Schema({
   creditScore: { type: Number, default: 100 },
   vipLevel: { type: Number, default: 0, min: 0, max: 3 },
   currency: { type: String, default: 'USDT' },
-  balances: { type: mongoose.Schema.Types.Mixed, default: {} },
   totalProfit: { type: Number, default: 0 },
   referralCode: String,
   referredBy: String,
@@ -122,13 +69,9 @@ const txSchema = new mongoose.Schema({
   userId: mongoose.Schema.Types.ObjectId,
   type: String,
   amount: Number,
-  currency: { type: String, default: 'USDT' },
   status: String,
   note: String,
-  rejectionReason: { type: String, default: '' },
-  reserved: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now },
-  reviewedAt: Date
+  createdAt: { type: Date, default: Date.now }
 }, { collection: 'transactions', strict: false });
 
 const msgSchema = new mongoose.Schema({
@@ -136,7 +79,6 @@ const msgSchema = new mongoose.Schema({
   subject: { type: String, default: 'Customer Service' },
   sender: String,
   text: String,
-  image: { type: String, default: '' },
   read: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now }
 }, { collection: 'messages', strict: false });
@@ -155,12 +97,6 @@ const Product = mongoose.model('AdminProduct', productSchema);
 const Transaction = mongoose.model('AdminTransaction', txSchema);
 const Message = mongoose.model('AdminMessage', msgSchema);
 const Audit = mongoose.model('AdminAudit', auditSchema);
-const platformSettingSchema = new mongoose.Schema({
-  key: { type: String, unique: true, index: true },
-  value: { type: mongoose.Schema.Types.Mixed, default: null },
-  updatedAt: { type: Date, default: Date.now }
-}, { collection: 'platform_settings' });
-const PlatformSetting = mongoose.model('AdminPlatformSetting', platformSettingSchema);
 const adminAccountSchema = new mongoose.Schema({
   username: { type: String, unique: true, index: true, trim: true },
   passwordHash: { type: String, required: true },
@@ -192,28 +128,7 @@ const taskProgressSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 }, { collection: 'taskprogresses', strict: false });
 const TaskProgress = mongoose.model('AdminTaskProgress', taskProgressSchema);
-const orderSchema = new mongoose.Schema({ userId: mongoose.Schema.Types.ObjectId, productId: mongoose.Schema.Types.ObjectId, productName:String, amount:Number, profitRate:Number, commission:Number, baseCommission:Number, commissionMultiplier:Number, availableBalance:Number, shortfall:Number, taskNumber:Number, reviewText:String, status:String, createdAt:Date, completedAt:Date }, { collection:"orders", strict:false });
-const Order = mongoose.model('AdminOrder', orderSchema);
 
-const SUPPORTED_CURRENCIES=["USDT","USD","MXN","EUR","GBP","CAD","AUD","JPY","CNY","SGD","THB","MYR","BRL","INR","EGP"];
-function normCurrency(v){const x=String(v||"USDT").trim().toUpperCase();return SUPPORTED_CURRENCIES.includes(x)?x:"USDT";}
-function walletMap(user){
-  const raw=(user.balances&&typeof user.balances==="object"&&!Array.isArray(user.balances))?user.balances:{},out={};
-  for(const k of Object.keys(raw)){const n=Number(raw[k]);if(Number.isFinite(n))out[normCurrency(k)]=Number(n.toFixed(2));}
-  const cur=normCurrency(user.currency);
-  // balances[currency] is canonical; legacy user.balance is only a mirror.
-  if(!Object.prototype.hasOwnProperty.call(out,cur))out[cur]=Number(Number(user.balance||0).toFixed(2));
-  return out;
-}
-function normalizeWalletState(user){
-  const w=walletMap(user);user.balances=w;user.balance=Number(w[normCurrency(user.currency)]||0);return w;
-}
-function setWalletBalance(user,currency,amount){
-  const cur=normCurrency(currency),w=walletMap(user),n=Number(amount);
-  if(!Number.isFinite(n)||n<0)throw new Error("Invalid balance amount");
-  w[cur]=Number(n.toFixed(2));user.balances=w;if(normCurrency(user.currency)===cur)user.balance=w[cur];
-}
-function syncLegacyBalance(user){const cur=normCurrency(user.currency),w=walletMap(user);user.balances=w;user.balance=Number(w[cur]||0);}
 function tokenFor(admin) {
   return jwt.sign(
     {
@@ -302,44 +217,6 @@ async function audit(admin, action, details, extra = {}) {
     console.error('Audit error:', error.message);
   }
 }
-
-app.get('/api/admin/deposit-addresses', auth, async (req,res)=>{
-  try{
-    const r=await fetch(BACKEND_URL+'/api/public/deposit-addresses');
-    const data=await r.json();
-    if(!r.ok||!data.success) return res.status(502).json({success:false,message:'Failed to load deposit addresses'});
-    res.json(data);
-  }catch(e){
-    console.error('Deposit address load:',e.message);
-    res.status(502).json({success:false,message:'Failed to load deposit addresses'});
-  }
-});
-
-app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{
-  try{
-    if(!DEPOSIT_SETTINGS_KEY) return res.status(500).json({success:false,message:'Deposit settings key is not configured'});
-    const body=req.body||{};
-    const addresses={
-      'USDT-TRC20':String(body['USDT-TRC20']||'').trim(),
-      'USDT-ERC20':String(body['USDT-ERC20']||'').trim(),
-      'ETH-ERC20':String(body['ETH-ERC20']||'').trim(),
-      'BTC-BTC':String(body['BTC-BTC']||'').trim()
-    };
-    if(Object.values(addresses).some(v=>!v)) return res.status(400).json({success:false,message:'All deposit addresses are required.'});
-    const r=await fetch(BACKEND_URL+'/api/internal/deposit-addresses',{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','x-deposit-settings-key':DEPOSIT_SETTINGS_KEY},
-      body:JSON.stringify(addresses)
-    });
-    const data=await r.json();
-    if(!r.ok||!data.success) return res.status(502).json({success:false,message:data.message||'Failed to save deposit addresses'});
-    await audit(req.admin,'DEPOSIT_ADDRESSES_UPDATE','Updated platform crypto deposit addresses');
-    res.json(data);
-  }catch(e){
-    console.error('Deposit address update:',e.message);
-    res.status(500).json({success:false,message:'Failed to save deposit addresses'});
-  }
-});
 
 app.get('/', (req, res) => {
   res.json({ success: true, service: 'Zonguru Admin Server', status: 'online' });
@@ -517,13 +394,7 @@ app.post('/api/admin/invite-codes/:id/revoke', auth, async (req, res) => {
 
 app.get('/api/admin/users', auth, async (req, res) => {
   try {
-    const users = await User.find(scopedUserFilter(req)).select('-passwordHash').sort({ createdAt: -1 }).lean();
-    const ids=users.map(u=>u._id);
-    const counts=await Order.aggregate([{ $match:{ userId:{ $in:ids } } },{ $group:{ _id:"$userId", count:{ $sum:1 } } }]);
-    const progress=await TaskProgress.find({userId:{$in:ids}}).select("userId completedIds currentTaskNumber").lean();
-    const progressMap=new Map(progress.map(x=>[String(x.userId),x]));
-    const countMap=new Map(counts.map(x=>[String(x._id),x.count]));
-    users.forEach(u=>{const p=progressMap.get(String(u._id))||{};u.orderCount=Number(countMap.get(String(u._id))||0);u.completedOrderCount=Math.min(5,Array.isArray(p.completedIds)?p.completedIds.length:0);u.currentTaskNumber=Number(p.currentTaskNumber||0);});
+    const users = await User.find(scopedUserFilter(req)).select('-passwordHash').sort({ createdAt: -1 });
     res.json({ success: true, users });
   } catch (error) {
     console.error('Load users:', error.message);
@@ -533,43 +404,23 @@ app.get('/api/admin/users', auth, async (req, res) => {
 
 async function adjustBalance(req, res) {
   try {
-    // Accept both fields so old and new admin clients can update balances.
-    const delta = Number(req.body.delta ?? req.body.amount), currency=normCurrency(req.body.currency);
-    if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ success:false,message:'Invalid balance adjustment' });
-    const user=await findScopedUser(req,req.params.id); if(!user)return res.status(404).json({success:false,message:'User not found'});
-    const w=walletMap(user),next=Number((Number(w[currency]||0)+delta).toFixed(2));
-    if(next<0)return res.status(400).json({success:false,message:'Balance cannot be negative',currency,currentBalance:Number(w[currency]||0)});
-    setWalletBalance(user,currency,next);normalizeWalletState(user);await user.save();
-    await audit(req.admin,delta>0?'BALANCE_ADD':'BALANCE_SUBTRACT',`${delta>0?'+':''}${delta.toFixed(2)} ${currency}; new balance ${next.toFixed(2)}`,{targetUserId:user._id});
-    res.json({success:true,user:cleanUser(user),currency,amount:delta,newBalance:next});
-  }catch(error){console.error('Balance update:',error.message);res.status(500).json({success:false,message:'Balance update failed'});}
+    const delta = Number(req.body.delta);
+    if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ success: false, message: 'Invalid balance adjustment' });
+    const user = await findScopedUser(req, req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const nextBalance = Number((Number(user.balance || 0) + delta).toFixed(2));
+    if (nextBalance < 0) return res.status(400).json({ success: false, message: 'Balance cannot be negative' });
+    user.balance = nextBalance;
+    await user.save();
+    await audit(req.admin, delta > 0 ? 'BALANCE_ADD' : 'BALANCE_SUBTRACT',
+      `${delta > 0 ? '+' : ''}${delta.toFixed(2)} ${user.currency}; new balance ${nextBalance.toFixed(2)}`,
+      { targetUserId: user._id });
+    res.json({ success: true, user: { id: user._id, username: user.username, balance: user.balance, currency: user.currency } });
+  } catch (error) {
+    console.error('Balance update:', error.message);
+    res.status(500).json({ success: false, message: 'Balance update failed' });
+  }
 }
-app.get('/api/admin/users/search', auth, async (req,res)=>{
-  try{
-    const q=String(req.query.q||'').trim();
-    const base=scopedUserFilter(req);
-    const filter=q?{...base,$or:[{username:{$regex:q,$options:'i'}},{email:{$regex:q,$options:'i'}},{phone:{$regex:q,$options:'i'}},{_id:mongoose.isValidObjectId(q)?q:null}].filter(x=>!('_id' in x)||x._id)}:base;
-    const users=await User.find(filter).select('-passwordHash').sort({createdAt:-1}).limit(200).lean();
-    const ids=users.map(u=>u._id); const counts=await Order.aggregate([{$match:{userId:{$in:ids}}},{$group:{_id:'$userId',count:{$sum:1}}}]);
-    const progress=await TaskProgress.find({userId:{$in:ids}}).select('userId completedIds currentTaskNumber').lean();
-    const pm=new Map(progress.map(x=>[String(x.userId),x])); const cm=new Map(counts.map(x=>[String(x._id),x.count]));
-    users.forEach(u=>{const p=pm.get(String(u._id))||{};u.orderCount=Number(cm.get(String(u._id))||0);u.completedOrderCount=Math.min(5,Array.isArray(p.completedIds)?p.completedIds.length:0);u.currentTaskNumber=Number(p.currentTaskNumber||0);});
-    res.json({success:true,users});
-  }catch(e){res.status(500).json({success:false,message:'User search failed'});}
-});
-
-app.get('/api/admin/users/:id/history', auth, async (req,res)=>{
-  try{
-    const user=await findScopedUser(req,req.params.id); if(!user)return res.status(404).json({success:false,message:'User not found'});
-    const orders=await Order.find({userId:user._id}).sort({createdAt:-1}).limit(500).lean();
-    const progress=await TaskProgress.findOne({userId:user._id}).select('completedIds currentTaskNumber').lean();
-    const completedOrderCount=Math.min(5,Array.isArray(progress?.completedIds)?progress.completedIds.length:0);
-    const currentPending=orders.find(o=>String(o.status||'').toLowerCase()==='pending');
-    const currentOrderStatus=currentPending?(Number(currentPending.shortfall||0)>0?'Insufficient Balance':'Pending'):'None';
-    res.json({success:true,user:{id:user._id,username:user.username,active:user.active!==false,lastLoginIp:user.lastLoginIp||'',lastLoginAt:user.lastLoginAt||null,orderCount:orders.length,completedOrderCount,currentTaskNumber:Number(progress?.currentTaskNumber||0),currentOrderStatus},orders});
-  }catch(e){res.status(500).json({success:false,message:'Failed to load order history'});}
-});
-
 app.post('/api/admin/users/:id/balance-adjust', auth, adjustBalance);
 app.post('/api/admin/users/:id/balance', auth, adjustBalance);
 
@@ -662,50 +513,71 @@ app.get('/api/admin/transactions', auth, async (req, res) => {
   try {
     const userIds = await getScopedUserIds(req);
     const filter = userIds ? { userId: { $in: userIds } } : {};
-    const q=String(req.query.q||"").trim();
-    if(q){
-      const matchingUsers=await User.find({...scopedUserFilter(req),$or:[{username:{$regex:q,$options:"i"}},{email:{$regex:q,$options:"i"}},{phone:{$regex:q,$options:"i"}}]}).select("_id").lean();
-      filter.$or=[{userId:{$in:matchingUsers.map(u=>u._id)}},{type:{$regex:q,$options:"i"}},{status:{$regex:q,$options:"i"}}];
-    }
-    const transactions = await Transaction.find(filter).sort({ createdAt: -1 }).limit(500).lean();
-    const ids=[...new Set(transactions.map(t=>String(t.userId||'')).filter(Boolean))];
-    const usersById=new Map((await User.find({_id:{$in:ids}}).select('username email phone').lean()).map(u=>[String(u._id),u]));
-    const enriched=transactions.map(t=>{
-      const u=usersById.get(String(t.userId||''));
-      return {...t,user:{id:t.userId,username:u?.username||'',email:u?.email||'',phone:u?.phone||''}};
-    });
-    res.json({ success: true, transactions:enriched });
+    const transactions = await Transaction.find(filter).sort({ createdAt: -1 }).limit(500);
+    res.json({ success: true, transactions });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to load transactions' });
   }
 });
 
-app.post('/api/admin/transactions/:id/approve', auth, async (req,res)=>{
-  try{
-    const transaction=await Transaction.findById(req.params.id);if(!transaction||transaction.status!=='pending')return res.status(400).json({success:false,message:'Transaction is not pending'});
-    const user=await findScopedUser(req,transaction.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
-    const amount=Number(transaction.amount||0),currency=normCurrency(transaction.currency||transaction.details?.currency||user.currency),type=String(transaction.type||'').toLowerCase(),w=walletMap(user);
-    if(type==='deposit')setWalletBalance(user,currency,Number(w[currency]||0)+amount);
-    if((type==='withdraw'||type==='withdrawal')&&!transaction.reserved){if(Number(w[currency]||0)<amount)return res.status(400).json({success:false,message:'User balance is insufficient'});setWalletBalance(user,currency,Number(w[currency]||0)-amount);}
-    normalizeWalletState(user);transaction.currency=currency;transaction.status='approved';transaction.reviewedAt=new Date();await user.save();await transaction.save();
-    await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:type==='deposit'?'Deposit request was approved.':'Withdrawal request was approved.',read:false});
-    await audit(req.admin,'TRANSACTION_APPROVE',`${transaction.type} ${amount} ${currency}`,{targetUserId:user._id,targetTransactionId:transaction._id});
-    res.json({success:true,message:'Transaction approved',transaction,user:cleanUser(user)});
-  }catch(error){console.error('Approve transaction:',error.message);res.status(500).json({success:false,message:'Transaction approval failed'});}
+app.post('/api/admin/transactions/:id/approve', auth, async (req, res) => {
+  try {
+    const transaction = await Transaction.findById(req.params.id);
+    if (!transaction || transaction.status !== 'pending')
+      return res.status(400).json({ success: false, message: 'Transaction is not pending' });
+    const user = await findScopedUser(req, transaction.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
+    const amount = Number(transaction.amount || 0);
+    const type = String(transaction.type || '').toLowerCase();
+    if (type === 'deposit') user.balance = Number((Number(user.balance || 0) + amount).toFixed(2));
+    if (type === 'withdraw' || type === 'withdrawal') {
+      if (Number(user.balance || 0) < amount)
+        return res.status(400).json({ success: false, message: 'User balance is insufficient' });
+      user.balance = Number((Number(user.balance || 0) - amount).toFixed(2));
+    }
+    transaction.status = 'approved';
+    await user.save();
+    await transaction.save();
+    await Message.create({
+      userId: user._id, subject: 'Customer Service', sender: 'admin',
+      text: type === 'deposit' ? 'Deposit request was approved.' : 'Withdrawal request was approved.',
+      read: false
+    });
+    await audit(req.admin, 'TRANSACTION_APPROVE', `${transaction.type} ${amount}`,
+      { targetUserId: user._id, targetTransactionId: transaction._id });
+    res.json({ success: true, message: 'Transaction approved' });
+  } catch (error) {
+    console.error('Approve transaction:', error.message);
+    res.status(500).json({ success: false, message: 'Transaction approval failed' });
+  }
 });
-app.post('/api/admin/transactions/:id/reject', auth, async (req,res)=>{
-  try{
-    const transaction=await Transaction.findById(req.params.id);if(!transaction||transaction.status!=='pending')return res.status(400).json({success:false,message:'Transaction is not pending'});
-    const user=await findScopedUser(req,transaction.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
-    const reason=String(req.body.reason||req.body.note||'').trim();if(reason.length>1000)return res.status(400).json({success:false,message:'Rejection reason is too long'});
-    const currency=normCurrency(transaction.currency||transaction.details?.currency||user.currency);
-    if(String(transaction.type||'').toLowerCase()==='withdrawal'&&transaction.reserved){const w=walletMap(user);setWalletBalance(user,currency,Number(w[currency]||0)+Number(transaction.amount||0));normalizeWalletState(user);await user.save();}
-    transaction.currency=currency;transaction.status='rejected';transaction.rejectionReason=reason;transaction.note=reason;transaction.reviewedAt=new Date();await transaction.save();
-    await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:(transaction.type==='deposit'?'Deposit request was rejected.':'Withdrawal request was rejected.')+(reason?' Reason: '+reason:''),read:false});
-    await audit(req.admin,'TRANSACTION_REJECT',`${transaction.type} ${transaction.amount} ${currency}${reason?' - '+reason:''}`,{targetUserId:user._id,targetTransactionId:transaction._id});
-    res.json({success:true,message:'Transaction rejected',transaction,user:cleanUser(user)});
-  }catch(error){console.error('Reject transaction:',error.message);res.status(500).json({success:false,message:'Transaction rejection failed'});}
+
+app.post('/api/admin/transactions/:id/reject', auth, async (req, res) => {
+  try {
+    const transaction = await Transaction.findById(req.params.id);
+    if (!transaction || transaction.status !== 'pending')
+      return res.status(400).json({ success: false, message: 'Transaction is not pending' });
+    if (!await findScopedUser(req, transaction.userId))
+      return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
+    transaction.status = 'rejected';
+    const note = String(req.body.note || '').trim();
+    if (note) transaction.note = `${transaction.note || ''}${transaction.note ? ' | ' : ''}${note}`;
+    await transaction.save();
+    await Message.create({
+      userId: transaction.userId, subject: 'Customer Service', sender: 'admin',
+      text: transaction.type === 'deposit' ? 'Deposit request was rejected.' : 'Withdrawal request was rejected.',
+      read: false
+    });
+    await audit(req.admin, 'TRANSACTION_REJECT',
+      `${transaction.type} ${transaction.amount}${note ? ' - ' + note : ''}`,
+      { targetUserId: transaction.userId, targetTransactionId: transaction._id });
+    res.json({ success: true, message: 'Transaction rejected' });
+  } catch (error) {
+    console.error('Reject transaction:', error.message);
+    res.status(500).json({ success: false, message: 'Transaction rejection failed' });
+  }
 });
+
 app.get('/api/admin/products', auth, async (req, res) => {
   try {
     const products = await Product.find().sort({ price: 1 });
