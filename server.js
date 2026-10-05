@@ -8,7 +8,7 @@ const app = express();
 
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: '1mb' }));
-app.use(express.static('public'));
+app.use(express.static('public', { setHeaders: (res) => { res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); res.setHeader('Pragma', 'no-cache'); res.setHeader('Expires', '0'); } }));
 
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'CHANGE_THIS_JWT_SECRET';
