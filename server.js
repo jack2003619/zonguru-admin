@@ -434,27 +434,22 @@ app.get('/api/admin/users', auth, async (req, res) => {
   }
 });
 
-async function adjustBalance(req, res) {
-  try {
-    const delta = Number(req.body.delta);
-    if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ success: false, message: 'Invalid balance adjustment' });
-    const user = await findScopedUser(req, req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    const nextBalance = Number((Number(user.balance || 0) + delta).toFixed(2));
-    if (nextBalance < 0) return res.status(400).json({ success: false, message: 'Balance cannot be negative' });
-    user.balance = nextBalance;
-    await user.save();
-    await audit(req.admin, delta > 0 ? 'BALANCE_ADD' : 'BALANCE_SUBTRACT',
-      `${delta > 0 ? '+' : ''}${delta.toFixed(2)} ${user.currency}; new balance ${nextBalance.toFixed(2)}`,
-      { targetUserId: user._id });
-    res.json({ success: true, user: { id: user._id, username: user.username, balance: user.balance, currency: user.currency } });
-  } catch (error) {
-    console.error('Balance update:', error.message);
-    res.status(500).json({ success: false, message: 'Balance update failed' });
-  }
+async function adjustBalance(req,res){
+  try{
+    const delta=Number(req.body.delta??req.body.amount);
+    if(!Number.isFinite(delta)||delta===0)return res.status(400).json({success:false,message:'Invalid balance adjustment'});
+    const user=await findScopedUser(req,req.params.id);
+    if(!user)return res.status(404).json({success:false,message:'User not found'});
+    const currency=normCurrency(req.body.currency||user.currency||'USDT');
+    const w=walletMap(user),current=Number(w[currency]||0),next=Number((current+delta).toFixed(2));
+    if(next<0)return res.status(400).json({success:false,message:'Balance cannot be negative'});
+    setWalletBalance(user,currency,next);syncLegacyBalance(user);await user.save();
+    await audit(req.admin,delta>0?'BALANCE_ADD':'BALANCE_SUBTRACT',(delta>0?'+':'')+delta.toFixed(2)+' '+currency+'; new balance '+next.toFixed(2),{targetUserId:user._id});
+    res.json({success:true,user:{id:user._id,username:user.username,balance:user.balance,currency:user.currency,balances:walletMap(user)},currency,previousBalance:current,newBalance:next});
+  }catch(error){console.error('Balance update:',error.message);res.status(500).json({success:false,message:'Balance update failed'});}
 }
-app.post('/api/admin/users/:id/balance-adjust', auth, adjustBalance);
-app.post('/api/admin/users/:id/balance', auth, adjustBalance);
+app.post('/api/admin/users/:id/balance-adjust',auth,adjustBalance);
+app.post('/api/admin/users/:id/balance',auth,adjustBalance);
 
 app.get('/api/admin/users/:id/insufficient-balance', auth, async (req, res) => {
   try {
