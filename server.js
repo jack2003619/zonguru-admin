@@ -780,12 +780,19 @@ app.get('/api/admin/audits', auth, async (req, res) => {
   }
 });
 
+// Start HTTP immediately so Render health checks can succeed even while MongoDB connects.
+const server = app.listen(PORT, () => console.log(`Zonguru admin server running on port ${PORT}`));
+
 mongoose.connect(MONGO_URL)
   .then(() => {
     console.log('MongoDB connected successfully');
-    app.listen(PORT, () => console.log(`Zonguru admin server running on port ${PORT}`));
   })
   .catch(error => {
     console.error('MongoDB connection failed:', error.message);
-    process.exit(1);
+    // Keep the HTTP server alive for Render health checks; database-dependent
+    // requests will return their normal error responses until MongoDB recovers.
   });
+
+process.on('SIGTERM', () => {
+  server.close(() => process.exit(0));
+});
