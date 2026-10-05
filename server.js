@@ -97,38 +97,6 @@ const Product = mongoose.model('AdminProduct', productSchema);
 const Transaction = mongoose.model('AdminTransaction', txSchema);
 const Message = mongoose.model('AdminMessage', msgSchema);
 const Audit = mongoose.model('AdminAudit', auditSchema);
-
-const PlatformSettingSchema = new mongoose.Schema({
-  key: { type: String, unique: true, index: true },
-  value: { type: mongoose.Schema.Types.Mixed, default: null },
-  updatedAt: { type: Date, default: Date.now }
-}, { collection: 'platform_settings' });
-const PlatformSetting = mongoose.model('AdminPlatformSetting', PlatformSettingSchema);
-
-const DEFAULT_DEPOSIT_ADDRESSES = {
-  'USDT-TRC20': 'TS3fFhpyCECAtEnV7gurRyojgKVznieun5',
-  'USDT-ERC20': '0x84a872810ab213eacb8ac8e9e962faf34cd9a72b',
-  'ETH-ERC20': '0x84a872810ab213eacb8ac8e9e962faf34cd9a72b',
-  'BTC-BTC': '176xzWWVLW5KsHoikVPatuinJJ6vMrvifW'
-};
-const SUPPORTED_CURRENCIES = ['USDT','USD','MXN','EUR','GBP','CAD','AUD','JPY','CNY','SGD','THB','MYR','BRL','INR','EGP'];
-function normCurrency(v){const x=String(v||'USDT').trim().toUpperCase();return SUPPORTED_CURRENCIES.includes(x)?x:'USDT';}
-function walletMap(user){
-  const raw=user&&user.balances&&typeof user.balances==='object'&&!Array.isArray(user.balances)?user.balances:{};
-  const out={};
-  for(const k of Object.keys(raw)){const n=Number(raw[k]);if(Number.isFinite(n))out[normCurrency(k)]=Number(n.toFixed(2));}
-  const cur=normCurrency(user&&user.currency);
-  if(!Object.prototype.hasOwnProperty.call(out,cur))out[cur]=Number(Number(user&&user.balance||0).toFixed(2));
-  return out;
-}
-function syncLegacyBalance(user){const cur=normCurrency(user.currency);const w=walletMap(user);user.balances=w;user.balance=Number(w[cur]||0);return w;}
-function setWalletBalance(user,currency,amount){
-  const cur=normCurrency(currency),n=Number(amount);
-  if(!Number.isFinite(n)||n<0)throw new Error('Invalid balance amount');
-  const w=walletMap(user);w[cur]=Number(n.toFixed(2));user.balances=w;
-  if(normCurrency(user.currency)===cur)user.balance=w[cur];
-}
-
 const adminAccountSchema = new mongoose.Schema({
   username: { type: String, unique: true, index: true, trim: true },
   passwordHash: { type: String, required: true },
@@ -434,22 +402,27 @@ app.get('/api/admin/users', auth, async (req, res) => {
   }
 });
 
-async function adjustBalance(req,res){
-  try{
-    const delta=Number(req.body.delta??req.body.amount);
-    if(!Number.isFinite(delta)||delta===0)return res.status(400).json({success:false,message:'Invalid balance adjustment'});
-    const user=await findScopedUser(req,req.params.id);
-    if(!user)return res.status(404).json({success:false,message:'User not found'});
-    const currency=normCurrency(req.body.currency||user.currency||'USDT');
-    const w=walletMap(user),current=Number(w[currency]||0),next=Number((current+delta).toFixed(2));
-    if(next<0)return res.status(400).json({success:false,message:'Balance cannot be negative'});
-    setWalletBalance(user,currency,next);syncLegacyBalance(user);await user.save();
-    await audit(req.admin,delta>0?'BALANCE_ADD':'BALANCE_SUBTRACT',(delta>0?'+':'')+delta.toFixed(2)+' '+currency+'; new balance '+next.toFixed(2),{targetUserId:user._id});
-    res.json({success:true,user:{id:user._id,username:user.username,balance:user.balance,currency:user.currency,balances:walletMap(user)},currency,previousBalance:current,newBalance:next});
-  }catch(error){console.error('Balance update:',error.message);res.status(500).json({success:false,message:'Balance update failed'});}
+async function adjustBalance(req, res) {
+  try {
+    const delta = Number(req.body.delta);
+    if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ success: false, message: 'Invalid balance adjustment' });
+    const user = await findScopedUser(req, req.params.id);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    const nextBalance = Number((Number(user.balance || 0) + delta).toFixed(2));
+    if (nextBalance < 0) return res.status(400).json({ success: false, message: 'Balance cannot be negative' });
+    user.balance = nextBalance;
+    await user.save();
+    await audit(req.admin, delta > 0 ? 'BALANCE_ADD' : 'BALANCE_SUBTRACT',
+      `${delta > 0 ? '+' : ''}${delta.toFixed(2)} ${user.currency}; new balance ${nextBalance.toFixed(2)}`,
+      { targetUserId: user._id });
+    res.json({ success: true, user: { id: user._id, username: user.username, balance: user.balance, currency: user.currency } });
+  } catch (error) {
+    console.error('Balance update:', error.message);
+    res.status(500).json({ success: false, message: 'Balance update failed' });
+  }
 }
-app.post('/api/admin/users/:id/balance-adjust',auth,adjustBalance);
-app.post('/api/admin/users/:id/balance',auth,adjustBalance);
+app.post('/api/admin/users/:id/balance-adjust', auth, adjustBalance);
+app.post('/api/admin/users/:id/balance', auth, adjustBalance);
 
 app.get('/api/admin/users/:id/insufficient-balance', auth, async (req, res) => {
   try {
@@ -547,33 +520,62 @@ app.get('/api/admin/transactions', auth, async (req, res) => {
   }
 });
 
-app.post('/api/admin/transactions/:id/approve',auth,async(req,res)=>{
-  try{
-    const t=await Transaction.findById(req.params.id);if(!t||t.status!=='pending')return res.status(400).json({success:false,message:'Transaction is not pending'});
-    const user=await findScopedUser(req,t.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
-    const amount=Number(t.amount||0);if(!Number.isFinite(amount)||amount<=0)return res.status(400).json({success:false,message:'Invalid transaction amount'});
-    const type=String(t.type||'').toLowerCase(),currency=normCurrency(t.currency||user.currency||'USDT'),w=walletMap(user);
-    if(type==='deposit')setWalletBalance(user,currency,Number(w[currency]||0)+amount);
-    if(type==='withdraw'||type==='withdrawal')if(!t.reserved){const available=Number(w[currency]||0);if(available<amount)return res.status(400).json({success:false,message:'User balance is insufficient',currency,availableBalance:available});setWalletBalance(user,currency,available-amount);}
-    syncLegacyBalance(user);t.status='approved';t.reviewedAt=new Date();await user.save();await t.save();
-    await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:type==='deposit'?'Deposit request was approved.':'Withdrawal request was approved.',read:false});
-    await audit(req.admin,'TRANSACTION_APPROVE',t.type+' '+amount+' '+currency,{targetUserId:user._id,targetTransactionId:t._id});
-    res.json({success:true,message:'Transaction approved',currency,user:cleanUser(user)});
-  }catch(error){console.error('Approve transaction:',error.message);res.status(500).json({success:false,message:'Transaction approval failed'});}
+app.post('/api/admin/transactions/:id/approve', auth, async (req, res) => {
+  try {
+    const transaction = await Transaction.findById(req.params.id);
+    if (!transaction || transaction.status !== 'pending')
+      return res.status(400).json({ success: false, message: 'Transaction is not pending' });
+    const user = await findScopedUser(req, transaction.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
+    const amount = Number(transaction.amount || 0);
+    const type = String(transaction.type || '').toLowerCase();
+    if (type === 'deposit') user.balance = Number((Number(user.balance || 0) + amount).toFixed(2));
+    if (type === 'withdraw' || type === 'withdrawal') {
+      if (Number(user.balance || 0) < amount)
+        return res.status(400).json({ success: false, message: 'User balance is insufficient' });
+      user.balance = Number((Number(user.balance || 0) - amount).toFixed(2));
+    }
+    transaction.status = 'approved';
+    await user.save();
+    await transaction.save();
+    await Message.create({
+      userId: user._id, subject: 'Customer Service', sender: 'admin',
+      text: type === 'deposit' ? 'Deposit request was approved.' : 'Withdrawal request was approved.',
+      read: false
+    });
+    await audit(req.admin, 'TRANSACTION_APPROVE', `${transaction.type} ${amount}`,
+      { targetUserId: user._id, targetTransactionId: transaction._id });
+    res.json({ success: true, message: 'Transaction approved' });
+  } catch (error) {
+    console.error('Approve transaction:', error.message);
+    res.status(500).json({ success: false, message: 'Transaction approval failed' });
+  }
 });
 
-app.post('/api/admin/transactions/:id/reject',auth,async(req,res)=>{
-  try{
-    const t=await Transaction.findById(req.params.id);if(!t||t.status!=='pending')return res.status(400).json({success:false,message:'Transaction is not pending'});
-    const user=await findScopedUser(req,t.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
-    const reason=String(req.body.reason??req.body.note??'').trim();if(reason.length>1000)return res.status(400).json({success:false,message:'Rejection reason is too long'});
-    const type=String(t.type||'').toLowerCase(),currency=normCurrency(t.currency||user.currency||'USDT'),refunded=(type==='withdraw'||type==='withdrawal')&&Boolean(t.reserved);
-    if(refunded){const w=walletMap(user);setWalletBalance(user,currency,Number(w[currency]||0)+Number(t.amount||0));syncLegacyBalance(user);await user.save();}
-    t.status='rejected';t.rejectionReason=reason;t.note=reason||t.note||'';t.reviewedAt=new Date();await t.save();
-    await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:type==='deposit'?'Deposit request was rejected.'+(reason?' Reason: '+reason:''):'Withdrawal request was rejected. '+(reason?'Reason: '+reason:'The amount has been returned to your balance.'),read:false});
-    await audit(req.admin,'TRANSACTION_REJECT',t.type+' '+t.amount+' '+currency+(reason?' - '+reason:''),{targetUserId:user._id,targetTransactionId:t._id});
-    res.json({success:true,message:'Transaction rejected',currency,refunded,user:cleanUser(user)});
-  }catch(error){console.error('Reject transaction:',error.message);res.status(500).json({success:false,message:'Transaction rejection failed'});}
+app.post('/api/admin/transactions/:id/reject', auth, async (req, res) => {
+  try {
+    const transaction = await Transaction.findById(req.params.id);
+    if (!transaction || transaction.status !== 'pending')
+      return res.status(400).json({ success: false, message: 'Transaction is not pending' });
+    if (!await findScopedUser(req, transaction.userId))
+      return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
+    transaction.status = 'rejected';
+    const note = String(req.body.note || '').trim();
+    if (note) transaction.note = `${transaction.note || ''}${transaction.note ? ' | ' : ''}${note}`;
+    await transaction.save();
+    await Message.create({
+      userId: transaction.userId, subject: 'Customer Service', sender: 'admin',
+      text: transaction.type === 'deposit' ? 'Deposit request was rejected.' : 'Withdrawal request was rejected.',
+      read: false
+    });
+    await audit(req.admin, 'TRANSACTION_REJECT',
+      `${transaction.type} ${transaction.amount}${note ? ' - ' + note : ''}`,
+      { targetUserId: transaction.userId, targetTransactionId: transaction._id });
+    res.json({ success: true, message: 'Transaction rejected' });
+  } catch (error) {
+    console.error('Reject transaction:', error.message);
+    res.status(500).json({ success: false, message: 'Transaction rejection failed' });
+  }
 });
 
 app.get('/api/admin/products', auth, async (req, res) => {
@@ -744,26 +746,6 @@ app.post('/api/admin/chat/:userId/reply', auth, async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, message: 'Reply sending failed' });
   }
-});
-
-app.get('/api/admin/deposit-addresses', auth, async (req, res) => {
-  try {
-    const setting=await PlatformSetting.findOne({key:'deposit_addresses'}).lean();
-    const addresses={...DEFAULT_DEPOSIT_ADDRESSES,...(setting&&setting.value||{})};
-    res.json({success:true,addresses});
-  } catch(error) { res.status(500).json({success:false,message:'Failed to load deposit addresses'}); }
-});
-
-app.put('/api/admin/deposit-addresses', auth, async (req, res) => {
-  try {
-    if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main Admin only'});
-    const body=req.body||{};
-    const addresses={'USDT-TRC20':String(body['USDT-TRC20']||'').trim(),'USDT-ERC20':String(body['USDT-ERC20']||'').trim(),'ETH-ERC20':String(body['ETH-ERC20']||'').trim(),'BTC-BTC':String(body['BTC-BTC']||'').trim()};
-    if(Object.values(addresses).some(v=>!v))return res.status(400).json({success:false,message:'All deposit addresses are required.'});
-    const setting=await PlatformSetting.findOneAndUpdate({key:'deposit_addresses'},{$set:{value:addresses,updatedAt:new Date()}},{upsert:true,new:true,setDefaultsOnInsert:true});
-    await audit(req.admin,'DEPOSIT_ADDRESSES_UPDATE','Platform deposit addresses updated.');
-    res.json({success:true,addresses:setting.value});
-  } catch(error) { res.status(500).json({success:false,message:'Failed to save deposit addresses'}); }
 });
 
 app.get('/api/admin/config', auth, async (req, res) => {
