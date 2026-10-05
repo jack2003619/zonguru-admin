@@ -432,7 +432,7 @@ app.use('/api/admin', auth, async (req,res,next)=>{
     if(req.method==='GET') return proxyBackend(req,res,'/api/public/deposit-addresses');
     return proxyBackend(req,res,'/api/internal/deposit-addresses');
   }
-  return proxyBackend(req,res,p);
+  return proxyBackend(req,res,'/api/admin'+p);
 });
 
 app.get('/api/admin/users', auth, async (req, res) => {
