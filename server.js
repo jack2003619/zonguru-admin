@@ -218,7 +218,7 @@ async function audit(admin, action, details, extra = {}) {
   }
 }
 
-app.get('/', (req, res) => {
+app.get('/health', (req, res) => {\n  res.status(200).json({ success: true, status: 'ok' });\n});\n\napp.get('/', (req, res) => {
   res.json({ success: true, service: 'Zonguru Admin Server', status: 'online' });
 });
 
