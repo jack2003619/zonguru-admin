@@ -780,6 +780,26 @@ app.post('/api/admin/chat/:userId/reply', auth, async (req, res) => {
   }
 });
 
+app.get('/api/admin/deposit-addresses', auth, async (req, res) => {
+  try {
+    const setting=await PlatformSetting.findOne({key:'deposit_addresses'}).lean();
+    const addresses={...DEFAULT_DEPOSIT_ADDRESSES,...(setting&&setting.value||{})};
+    res.json({success:true,addresses});
+  } catch(error) { res.status(500).json({success:false,message:'Failed to load deposit addresses'}); }
+});
+
+app.put('/api/admin/deposit-addresses', auth, async (req, res) => {
+  try {
+    if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main Admin only'});
+    const body=req.body||{};
+    const addresses={'USDT-TRC20':String(body['USDT-TRC20']||'').trim(),'USDT-ERC20':String(body['USDT-ERC20']||'').trim(),'ETH-ERC20':String(body['ETH-ERC20']||'').trim(),'BTC-BTC':String(body['BTC-BTC']||'').trim()};
+    if(Object.values(addresses).some(v=>!v))return res.status(400).json({success:false,message:'All deposit addresses are required.'});
+    const setting=await PlatformSetting.findOneAndUpdate({key:'deposit_addresses'},{$set:{value:addresses,updatedAt:new Date()}},{upsert:true,new:true,setDefaultsOnInsert:true});
+    await audit(req.admin,'DEPOSIT_ADDRESSES_UPDATE','Platform deposit addresses updated.');
+    res.json({success:true,addresses:setting.value});
+  } catch(error) { res.status(500).json({success:false,message:'Failed to save deposit addresses'}); }
+});
+
 app.get('/api/admin/config', auth, async (req, res) => {
   res.json({
     success: true,
