@@ -116,7 +116,7 @@ async function applyConvertedBalance(direction){
     if(current+delta<0)return msg('userMsg','Cannot subtract more than the current USDT balance.');
   }
   try{
-    await api('/api/admin/users/'+uid(selected)+'/balance',{method:'POST',body:JSON.stringify({delta, currency:c.from, sourceCurrency:c.from, sourceAmount:c.amount, targetCurrency:c.to, convertedAmount:c.result})});
+    await api('/api/admin/users/'+uid(selected)+'/balance',{method:'POST',body:JSON.stringify({delta:c.amount, currency:c.from, sourceCurrency:c.from, sourceAmount:c.amount, targetCurrency:c.to, convertedAmount:c.result})});
     msg('userMsg',(direction>0?'Added ':'Subtracted ')+Math.abs(delta).toFixed(2)+' USDT. Equivalent: '+c.amount.toFixed(2)+' '+c.from+' → '+c.result.toFixed(2)+' '+c.to+'.',true);
     await loadUsers();selected=users.find(u=>uid(u)===uid(selected))||selected;
   }catch(e){msg('userMsg',e.message)}
