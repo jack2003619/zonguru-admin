@@ -41,12 +41,31 @@ main{padding:12px;max-width:1200px;margin:auto}.tabs{display:flex;gap:8px;overfl
 <section id="audits" class="card hidden"><h3>Audit Logs</h3><div id="auditMsg"></div><div class="tablewrap"><table><thead><tr><th>Action</th><th>Target</th><th>Details</th><th>Date</th></tr></thead><tbody id="auditBody"></tbody></table></div></section>
 </main></div>
 
-<div id="userModal" class="modal"><div class="modalbox"><h3>User Settings</h3><div id="userMeta" class="muted"></div><div class="grid" style="margin-top:12px"><div class="field"><label>Balance (+/-)</label><input id="balanceDelta" type="number" step="0.01" placeholder="e.g. 500 or -100"></div><div class="field"><label>Frozen Amount</label><input id="frozen" type="number" min="0" step="0.01"></div><div class="field"><label>Credit Score (0-100)</label><input id="credit" type="number" min="0" max="100"></div><div class="field"><label>VIP Level</label><select id="vip"><option value="0">VIP 0</option><option value="1">VIP 1</option><option value="2">VIP 2</option><option value="3">VIP 3</option></select></div></div><hr><h4>Insufficient Balance — Selected User Only</h4><div class="notice">This rule applies only to the user currently selected. Other users are not affected.</div><div class="grid"><div class="field"><label>Enable for this user</label><select id="uib"><option value="false">No</option><option value="true">Yes</option></select></div><div class="field"><label>Task Number (1-5)</label><input id="uit" type="number" min="1" max="5" value="3"></div><div class="field"><label>Required Amount</label><input id="uia" type="number" min="0" step="0.01" value="500"></div><div class="field"><label>Commission Multiplier</label><input id="uim" type="number" min="1" max="20" step="0.1" value="8"></div></div><div class="actions"><button class="primary" onclick="saveBalance()">Apply Balance</button><button class="secondary" onclick="saveFinancial()">Save Frozen / Credit</button><button class="secondary" onclick="saveVip()">Save VIP</button><button class="secondary" onclick="saveUserInsufficientRule()">Save Insufficient Rule</button><button class="danger" onclick="resetTask()">Reset Task to 0</button><button onclick="closeModal()">Close</button></div><div id="userMsg"></div></div></div>
+<div id="userModal" class="modal"><div class="modalbox"><h3>User Settings</h3><div id="userMeta" class="muted"></div><div class="grid" style="margin-top:12px"><div class="field"><label>Balance (+/-) — Primary: USDT</label><input id="balanceDelta" type="number" step="0.01" placeholder="e.g. 500 or -100"></div><div class="field"><label>Frozen Amount</label><input id="frozen" type="number" min="0" step="0.01"></div><div class="field"><label>Credit Score (0-100)</label><input id="credit" type="number" min="0" max="100"></div><div class="field"><label>VIP Level</label><select id="vip"><option value="0">VIP 0</option><option value="1">VIP 1</option><option value="2">VIP 2</option><option value="3">VIP 3</option></select></div></div><hr><h4>Insufficient Balance — Selected User Only</h4><div class="notice">This rule applies only to the user currently selected. Other users are not affected.</div><div class="grid"><div class="field"><label>Enable for this user</label><select id="uib"><option value="false">No</option><option value="true">Yes</option></select></div><div class="field"><label>Task Number (1-5)</label><input id="uit" type="number" min="1" max="5" value="3"></div><div class="field"><label>Required Amount</label><input id="uia" type="number" min="0" step="0.01" value="500"></div><div class="field"><label>Commission Multiplier</label><input id="uim" type="number" min="1" max="20" step="0.1" value="8"></div></div><div class="actions"><button class="primary" onclick="saveBalance()">Apply Balance (USDT)</button><button class="secondary" type="button" onclick="toggleCurrencyConverter()">Currency Converter</button><button class="secondary" onclick="saveFinancial()">Save Frozen / Credit</button><button class="secondary" onclick="saveVip()">Save VIP</button><button class="secondary" onclick="saveUserInsufficientRule()">Save Insufficient Rule</button><button class="danger" onclick="resetTask()">Reset Task to 0</button><button onclick="closeModal()">Close</button></div><div id="currencyConverter" class="card hidden" style="margin-top:12px;background:#faf8ff;border:1px solid #e5def1;box-shadow:none">
+  <h4 style="margin:0 0 8px">Currency Converter → User USDT Balance</h4>
+  <div class="notice">Admin primary currency is USDT. Enter an amount in any supported currency, choose the currency you want to know, and the amount is calculated using the existing fixed rates. Applying the conversion always credits/debits the user's primary USDT balance, so the USDT equivalent is clear.</div>
+  <div class="grid">
+    <div class="field"><label>Input Currency</label><select id="convFrom"></select></div>
+    <div class="field"><label>Input Amount</label><input id="convAmount" type="number" step="0.01" min="0" placeholder="e.g. 1850"></div>
+    <div class="field"><label>Show As / Target Currency</label><select id="convTo"></select></div>
+    <div class="field"><label>Converted Amount</label><input id="convResult" readonly placeholder="0.00"></div>
+  </div>
+  <div id="convSummary" class="stat">Enter an amount to see the conversion.</div>
+  <div class="actions">
+    <button class="secondary" type="button" onclick="convertPreview()">Calculate</button>
+    <button class="primary" type="button" onclick="applyConvertedBalance(1)">Add Converted Amount</button>
+    <button class="danger" type="button" onclick="applyConvertedBalance(-1)">Subtract Converted Amount</button>
+    <button type="button" onclick="toggleCurrencyConverter(false)">Close Converter</button>
+  </div>
+</div>
+<div id="userMsg"></div></div></div>
 
 <div id="productModal" class="modal"><div class="modalbox"><h3>Product / Task Settings</h3><input id="pid" type="hidden"><div class="grid"><div class="field"><label>Name</label><input id="pn"></div><div class="field"><label>Price</label><input id="pp" type="number" min="0" step="0.01"></div><div class="field"><label>Profit Amount / Rate</label><input id="pr" type="number" min="0" step="0.01"></div><div class="field"><label>Required VIP</label><input id="pv" type="number" min="0" max="3"></div></div><hr><h4>Insufficient Balance</h4><div class="notice">Insufficient-balance rules are now configured per selected user under <b>Users → Settings</b>. Product-level insufficient-balance rules are not applied to users globally.</div><div class="actions"><button class="primary" onclick="saveProduct()">Save</button><button onclick="closeProduct()">Close</button></div><div id="prodMsg"></div></div></div>
 
 <script>
 const API='https://zonguru-admin.onrender.com';let token=localStorage.getItem('zonguru_admin_token')||'';let users=[],products=[],selected=null,chatSelected=null,chatList=[],currentAdmin=null,secondAdmins=[],inviteCodes=[];
+const currencyRates={USDT:1,USD:1,MXN:18.5,EUR:0.86,GBP:0.75,CAD:1.38,AUD:1.51,JPY:148,CNY:7.1,SGD:1.28,THB:32.5,MYR:4.25,BRL:5.35,INR:88,EGP:51.75};
+const currencyLabels={USDT:'USDT',USD:'USD',MXN:'MXN',EUR:'EUR',GBP:'GBP',CAD:'CAD',AUD:'AUD',JPY:'JPY',CNY:'CNY',SGD:'SGD',THB:'THB',MYR:'MYR',BRL:'BRL',INR:'INR',EGP:'EGP'};
 const $=id=>document.getElementById(id);const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
 async function api(path,opt={}){opt.headers=opt.headers||{};opt.headers['Content-Type']='application/json';if(token)opt.headers.Authorization='Bearer '+token;const r=await fetch(API+path,opt);const d=await r.json().catch(()=>({}));if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
 async function login(){try{const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({username:$('lu').value.trim(),password:$('lp').value})});token=d.token;localStorage.setItem('zonguru_admin_token',token);start()}catch(e){msg('loginMsg',e.message)}}function logout(){localStorage.removeItem('zonguru_admin_token');location.reload()}
@@ -67,8 +86,40 @@ function tab(t){
 }
 async function loadUsers(){try{const d=await api('/api/admin/users');users=d.users||[];renderUsers()}catch(e){msg('usersMsg',e.message)}}
 function renderUsers(){$('usersBody').innerHTML=users.map(u=>`<tr><td><b>${esc(u.username)}</b><br><span class="small">${esc(uid(u))}</span></td><td>${esc(u.email||'-')}<br>${esc(u.phone||'-')}</td><td>${money(u.balance)} ${esc(u.currency||'USDT')}</td><td>${money(u.frozenAmount)}</td><td>${esc(u.creditScore??100)}</td><td>VIP ${esc(u.vipLevel??0)}</td><td><button class="secondary" onclick="openUser('${uid(u)}')">Settings</button><button class="secondary" onclick="openChat('${uid(u)}')">Chat</button></td></tr>`).join('')||'<tr><td colspan="7">No users</td></tr>'}
-function openUser(id){selected=users.find(u=>uid(u)===id);if(!selected)return;$('userMeta').textContent=(selected.username||'-')+' · '+uid(selected);$('balanceDelta').value='';$('frozen').value=selected.frozenAmount??0;$('credit').value=selected.creditScore??100;$('vip').value=selected.vipLevel??0;$('uib').value=String(Boolean(selected.insufficientBalanceEnabled));$('uit').value=selected.insufficientBalanceTaskNumber||3;$('uia').value=selected.insufficientBalanceRequiredAmount||500;$('uim').value=selected.insufficientBalanceCommissionMultiplier||8;$('userMsg').innerHTML='';$('userModal').classList.add('show')}
+function openUser(id){selected=users.find(u=>uid(u)===id);if(!selected)return;$('userMeta').textContent=(selected.username||'-')+' · '+uid(selected);$('balanceDelta').value='';fillCurrencyConverter();$('frozen').value=selected.frozenAmount??0;$('credit').value=selected.creditScore??100;$('vip').value=selected.vipLevel??0;$('uib').value=String(Boolean(selected.insufficientBalanceEnabled));$('uit').value=selected.insufficientBalanceTaskNumber||3;$('uia').value=selected.insufficientBalanceRequiredAmount||500;$('uim').value=selected.insufficientBalanceCommissionMultiplier||8;$('userMsg').innerHTML='';$('userModal').classList.add('show')}
 function closeModal(){$('userModal').classList.remove('show')}
+function fillCurrencyConverter(){
+  const opts=Object.keys(currencyRates).map(c=>'<option value="'+c+'">'+currencyLabels[c]+'</option>').join('');
+  $('convFrom').innerHTML=opts;$('convTo').innerHTML=opts;
+  $('convFrom').value='MXN';$('convTo').value='USDT';$('convAmount').value='';$('convResult').value='';$('convSummary').textContent='Enter an amount to see the conversion.';
+}
+function toggleCurrencyConverter(force){
+  const el=$('currencyConverter');const show=force===undefined?!el.classList.contains('hidden'):Boolean(force);
+  el.classList.toggle('hidden',!show);if(show)fillCurrencyConverter();
+}
+function convertPreview(){
+  const from=$('convFrom').value,to=$('convTo').value,amount=Number($('convAmount').value||0);
+  if(!Number.isFinite(amount)||amount<0){$('convResult').value='';$('convSummary').textContent='Enter a valid amount.';return null}
+  const usdt=amount/(Number(currencyRates[from])||1);
+  const result=usdt*(Number(currencyRates[to])||1);
+  $('convResult').value=result.toFixed(2);
+  $('convSummary').textContent=amount.toFixed(2)+' '+from+' = '+result.toFixed(2)+' '+to+' = '+usdt.toFixed(2)+' USDT (primary balance).';
+  return {from,to,amount,usdt,result};
+}
+async function applyConvertedBalance(direction){
+  if(!selected)return;
+  const c=convertPreview();if(!c||c.amount<=0)return msg('userMsg','Enter a valid amount greater than 0.');
+  const delta=Number((c.usdt*direction).toFixed(2));
+  if(direction<0){
+    const current=Number(selected.balance||0);
+    if(current+delta<0)return msg('userMsg','Cannot subtract more than the current USDT balance.');
+  }
+  try{
+    await api('/api/admin/users/'+uid(selected)+'/balance',{method:'POST',body:JSON.stringify({delta,currency:'USDT',sourceCurrency:c.from,sourceAmount:c.amount,targetCurrency:c.to,convertedAmount:c.result})});
+    msg('userMsg',(direction>0?'Added ':'Subtracted ')+Math.abs(delta).toFixed(2)+' USDT. Equivalent: '+c.amount.toFixed(2)+' '+c.from+' → '+c.result.toFixed(2)+' '+c.to+'.',true);
+    await loadUsers();selected=users.find(u=>uid(u)===uid(selected))||selected;
+  }catch(e){msg('userMsg',e.message)}
+}
 async function saveBalance(){if(!selected)return;const delta=Number($('balanceDelta').value);if(!Number.isFinite(delta)||delta===0)return msg('userMsg','Enter a non-zero balance change.');try{await api('/api/admin/users/'+uid(selected)+'/balance',{method:'POST',body:JSON.stringify({delta})});msg('userMsg','Balance updated.',true);await loadUsers();selected=users.find(u=>uid(u)===uid(selected));}catch(e){msg('userMsg',e.message)}}
 async function saveFinancial(){if(!selected)return;try{await api('/api/admin/users/'+uid(selected)+'/financial-settings',{method:'POST',body:JSON.stringify({frozenAmount:Number($('frozen').value||0),creditScore:Number($('credit').value||0)})});msg('userMsg','Frozen Amount and Credit Score saved.',true);await loadUsers()}catch(e){msg('userMsg',e.message)}}
 async function saveVip(){if(!selected)return;try{await api('/api/admin/users/'+uid(selected)+'/vip',{method:'POST',body:JSON.stringify({vipLevel:Number($('vip').value)})});msg('userMsg','VIP updated and task progress reset to 0.',true);await loadUsers()}catch(e){msg('userMsg',e.message)}}
