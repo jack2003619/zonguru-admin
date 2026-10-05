@@ -116,6 +116,13 @@ const adminInviteCodeSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 }, { collection: 'invite_codes', strict: false });
 
+const platformSettingSchema = new mongoose.Schema({
+  key: { type: String, unique: true, index: true },
+  value: { type: mongoose.Schema.Types.Mixed, default: null },
+  updatedAt: { type: Date, default: Date.now }
+}, { collection: 'platform_settings', strict: false });
+const PlatformSetting = mongoose.model('AdminPlatformSetting', platformSettingSchema);
+
 const AdminAccount = mongoose.model('AdminAccount', adminAccountSchema);
 const AdminInviteCode = mongoose.model('AdminInviteCode', adminInviteCodeSchema);
 
@@ -598,6 +605,23 @@ app.post('/api/admin/users/:id/financial-settings', auth, async (req, res) => {
   } catch (error) {
     console.error('Financial settings:', error.message);
     res.status(500).json({ success: false, message: 'Financial settings update failed' });
+  }
+});
+
+app.post('/api/admin/users/:id/currency', auth, async (req, res) => {
+  try {
+    const currency = String(req.body?.currency || 'USDT').trim().toUpperCase();
+    if (!['USDT','BTC','ETH'].includes(currency))
+      return res.status(400).json({ success:false, message:'Currency must be USDT, BTC or ETH' });
+    const user = await findScopedUser(req, req.params.id);
+    if (!user) return res.status(404).json({ success:false, message:'User not found' });
+    user.currency = currency;
+    await user.save();
+    await audit(req.admin, 'USER_CURRENCY_UPDATE', 'Currency changed to ' + currency, { targetUserId:user._id });
+    res.json({ success:true, user:cleanUser(user) });
+  } catch (error) {
+    console.error('Currency update:', error.message);
+    res.status(500).json({ success:false, message:'Currency update failed' });
   }
 });
 
