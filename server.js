@@ -403,6 +403,35 @@ app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperA
 
 /* Admin data is handled directly against the same Zonguru MongoDB used by the platform backend.
    Keep these routes local so admin actions do not depend on a missing /api/internal bridge. */
+/* Core platform data is authoritative in the deployed Zonguru backend database. */
+const BACKEND_URL=String(process.env.BACKEND_URL||'https://zonguru-jack-api.onrender.com').replace(/\/$/,'');
+async function proxyBackend(req,res,targetPath){
+  try{
+    const headers={'Content-Type':'application/json'};
+    if(req.headers.authorization) headers.Authorization=req.headers.authorization;
+    const bridge=String(process.env.BACKEND_BRIDGE_SECRET||'');
+    if(bridge) headers['x-deposit-settings-key']=bridge;
+    const opts={method:req.method,headers};
+    if(!['GET','HEAD'].includes(req.method)) opts.body=JSON.stringify(req.body||{});
+    const r=await fetch(BACKEND_URL+targetPath,opts);
+    const text=await r.text();
+    let data;try{data=JSON.parse(text)}catch{data={success:false,message:'Backend returned non-JSON response'}}
+    return res.status(r.status).json(data);
+  }catch(e){console.error('Backend proxy:',e.message);return res.status(502).json({success:false,message:'Main backend unavailable'});}
+}
+app.use('/api/admin', auth, async (req,res,next)=>{
+  const p=req.path;
+  const isCore=(req.method==='GET'&&(/^\\/users$/.test(p)||/^\\/users\\/[0-9a-fA-F]{24}\\/(balances|history)$/.test(p)||p==='/transactions'||/^\\/chat\\/[0-9a-fA-F]{24}$/.test(p)))
+    ||(req.method==='POST'&&(/^\\/users\\/[0-9a-fA-F]{24}\\/(balance|financial-settings|insufficient-balance|vip|task-reset)$/.test(p)||/^\\/transactions\\/[0-9a-fA-F]{24}\\/(approve|reject)$/.test(p)||/^\\/chat\\/[0-9a-fA-F]{24}\\/reply$/.test(p)))
+    ||(req.method==='GET'&&p==='/deposit-addresses')||(req.method==='PUT'&&p==='/deposit-addresses');
+  if(!isCore) return next();
+  if(p==='/deposit-addresses'){
+    if(req.method==='GET') return proxyBackend(req,res,'/api/public/deposit-addresses');
+    return proxyBackend(req,res,'/api/internal/deposit-addresses');
+  }
+  return proxyBackend(req,res,p);
+});
+
 app.get('/api/admin/users', auth, async (req, res) => {
   try {
     const users = await User.find(scopedUserFilter(req)).select('-passwordHash').sort({ createdAt: -1 });
