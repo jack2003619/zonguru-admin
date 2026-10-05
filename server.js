@@ -436,6 +436,22 @@ app.use('/api/admin', auth, async (req,res,next)=>{
   // Read legacy transaction/chat records from both the Admin DB and the
   // deployed platform backend. This preserves older records if they were
   // written before the two services were separated.
+  if(req.method==='GET' && p==='/chat-users'){
+    try{
+      const headers={'Content-Type':'application/json'};
+      if(req.headers.authorization) headers.Authorization=req.headers.authorization;
+      const r=await fetch(BACKEND_URL+'/api/admin/users',{method:'GET',headers});
+      const text=await r.text(); let remote={}; try{remote=JSON.parse(text)}catch{}
+      const remoteUsers=Array.isArray(remote.users)?remote.users:[];
+      const localUsers=await User.find(scopedUserFilter(req)).select('-passwordHash').sort({createdAt:-1}).lean();
+      const merged=[...remoteUsers,...localUsers],seen=new Set();
+      const users=merged.filter(u=>{const id=String(u._id||u.id||'');if(!id||seen.has(id))return false;seen.add(id);return true;});
+      return res.json({success:true,users});
+    }catch(e){
+      const users=await User.find(scopedUserFilter(req)).select('-passwordHash').sort({createdAt:-1}).lean();
+      return res.json({success:true,users});
+    }
+  }
   if(req.method==='GET' && p==='/transactions'){
     try{
       const headers={'Content-Type':'application/json'};
