@@ -54,7 +54,7 @@ async function start(){
   $('login').classList.add('hidden');$('app').classList.remove('hidden');
   try{
     const d=await api('/api/admin/me'); currentAdmin=d.admin||null;
-    $('adminTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');
+    $('adminTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');$('platformTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');
     const sub=document.querySelector('header .sub');
     if(sub) sub.textContent=(currentAdmin?.adminType==='superadmin'?'Main Admin':'Second Admin')+' · '+(currentAdmin?.username||'');
     await loadUsers();
@@ -79,7 +79,7 @@ async function saveDepositAddresses(){
 }
 function tab(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
-  ['users','transactions','products','chat','audits','admins'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
+  ['users','transactions','products','chat','audits','admins','platform'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
   if(t==='users')loadUsers();if(t==='transactions')loadTx();if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits(); if(t==='platform')loadDepositAddresses();if(t==='admins')loadAdminManagement();
 }
 async function loadUsers(){try{const d=await api('/api/admin/users');users=d.users||[];renderUsers()}catch(e){msg('usersMsg',e.message)}}
