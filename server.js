@@ -547,62 +547,33 @@ app.get('/api/admin/transactions', auth, async (req, res) => {
   }
 });
 
-app.post('/api/admin/transactions/:id/approve', auth, async (req, res) => {
-  try {
-    const transaction = await Transaction.findById(req.params.id);
-    if (!transaction || transaction.status !== 'pending')
-      return res.status(400).json({ success: false, message: 'Transaction is not pending' });
-    const user = await findScopedUser(req, transaction.userId);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
-    const amount = Number(transaction.amount || 0);
-    const type = String(transaction.type || '').toLowerCase();
-    if (type === 'deposit') user.balance = Number((Number(user.balance || 0) + amount).toFixed(2));
-    if (type === 'withdraw' || type === 'withdrawal') {
-      if (Number(user.balance || 0) < amount)
-        return res.status(400).json({ success: false, message: 'User balance is insufficient' });
-      user.balance = Number((Number(user.balance || 0) - amount).toFixed(2));
-    }
-    transaction.status = 'approved';
-    await user.save();
-    await transaction.save();
-    await Message.create({
-      userId: user._id, subject: 'Customer Service', sender: 'admin',
-      text: type === 'deposit' ? 'Deposit request was approved.' : 'Withdrawal request was approved.',
-      read: false
-    });
-    await audit(req.admin, 'TRANSACTION_APPROVE', `${transaction.type} ${amount}`,
-      { targetUserId: user._id, targetTransactionId: transaction._id });
-    res.json({ success: true, message: 'Transaction approved' });
-  } catch (error) {
-    console.error('Approve transaction:', error.message);
-    res.status(500).json({ success: false, message: 'Transaction approval failed' });
-  }
+app.post('/api/admin/transactions/:id/approve',auth,async(req,res)=>{
+  try{
+    const t=await Transaction.findById(req.params.id);if(!t||t.status!=='pending')return res.status(400).json({success:false,message:'Transaction is not pending'});
+    const user=await findScopedUser(req,t.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
+    const amount=Number(t.amount||0);if(!Number.isFinite(amount)||amount<=0)return res.status(400).json({success:false,message:'Invalid transaction amount'});
+    const type=String(t.type||'').toLowerCase(),currency=normCurrency(t.currency||user.currency||'USDT'),w=walletMap(user);
+    if(type==='deposit')setWalletBalance(user,currency,Number(w[currency]||0)+amount);
+    if(type==='withdraw'||type==='withdrawal')if(!t.reserved){const available=Number(w[currency]||0);if(available<amount)return res.status(400).json({success:false,message:'User balance is insufficient',currency,availableBalance:available});setWalletBalance(user,currency,available-amount);}
+    syncLegacyBalance(user);t.status='approved';t.reviewedAt=new Date();await user.save();await t.save();
+    await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:type==='deposit'?'Deposit request was approved.':'Withdrawal request was approved.',read:false});
+    await audit(req.admin,'TRANSACTION_APPROVE',t.type+' '+amount+' '+currency,{targetUserId:user._id,targetTransactionId:t._id});
+    res.json({success:true,message:'Transaction approved',currency,user:cleanUser(user)});
+  }catch(error){console.error('Approve transaction:',error.message);res.status(500).json({success:false,message:'Transaction approval failed'});}
 });
 
-app.post('/api/admin/transactions/:id/reject', auth, async (req, res) => {
-  try {
-    const transaction = await Transaction.findById(req.params.id);
-    if (!transaction || transaction.status !== 'pending')
-      return res.status(400).json({ success: false, message: 'Transaction is not pending' });
-    if (!await findScopedUser(req, transaction.userId))
-      return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
-    transaction.status = 'rejected';
-    const note = String(req.body.note || '').trim();
-    if (note) transaction.note = `${transaction.note || ''}${transaction.note ? ' | ' : ''}${note}`;
-    await transaction.save();
-    await Message.create({
-      userId: transaction.userId, subject: 'Customer Service', sender: 'admin',
-      text: transaction.type === 'deposit' ? 'Deposit request was rejected.' : 'Withdrawal request was rejected.',
-      read: false
-    });
-    await audit(req.admin, 'TRANSACTION_REJECT',
-      `${transaction.type} ${transaction.amount}${note ? ' - ' + note : ''}`,
-      { targetUserId: transaction.userId, targetTransactionId: transaction._id });
-    res.json({ success: true, message: 'Transaction rejected' });
-  } catch (error) {
-    console.error('Reject transaction:', error.message);
-    res.status(500).json({ success: false, message: 'Transaction rejection failed' });
-  }
+app.post('/api/admin/transactions/:id/reject',auth,async(req,res)=>{
+  try{
+    const t=await Transaction.findById(req.params.id);if(!t||t.status!=='pending')return res.status(400).json({success:false,message:'Transaction is not pending'});
+    const user=await findScopedUser(req,t.userId);if(!user)return res.status(404).json({success:false,message:'User not found or not assigned to this admin'});
+    const reason=String(req.body.reason??req.body.note??'').trim();if(reason.length>1000)return res.status(400).json({success:false,message:'Rejection reason is too long'});
+    const type=String(t.type||'').toLowerCase(),currency=normCurrency(t.currency||user.currency||'USDT'),refunded=(type==='withdraw'||type==='withdrawal')&&Boolean(t.reserved);
+    if(refunded){const w=walletMap(user);setWalletBalance(user,currency,Number(w[currency]||0)+Number(t.amount||0));syncLegacyBalance(user);await user.save();}
+    t.status='rejected';t.rejectionReason=reason;t.note=reason||t.note||'';t.reviewedAt=new Date();await t.save();
+    await Message.create({userId:user._id,subject:'Customer Service',sender:'admin',text:type==='deposit'?'Deposit request was rejected.'+(reason?' Reason: '+reason:''):'Withdrawal request was rejected. '+(reason?'Reason: '+reason:'The amount has been returned to your balance.'),read:false});
+    await audit(req.admin,'TRANSACTION_REJECT',t.type+' '+t.amount+' '+currency+(reason?' - '+reason:''),{targetUserId:user._id,targetTransactionId:t._id});
+    res.json({success:true,message:'Transaction rejected',currency,refunded,user:cleanUser(user)});
+  }catch(error){console.error('Reject transaction:',error.message);res.status(500).json({success:false,message:'Transaction rejection failed'});}
 });
 
 app.get('/api/admin/products', auth, async (req, res) => {
