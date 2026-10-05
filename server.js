@@ -428,12 +428,13 @@ async function proxyBackend(req,res,targetPath){
 }
 app.use('/api/admin', auth, async (req,res,next)=>{
   const p=req.path;
-  const userPath=p.startsWith('/users/');
   const txPath=p.startsWith('/transactions/');
-  const chatPath=p.startsWith('/chat/');
   const productPath=p.startsWith('/products');
-  const isCore=(req.method==='GET'&&(p==='/users'||p==='/transactions'||userPath||chatPath||productPath))
-    ||(req.method==='POST'&&(userPath||txPath||chatPath||productPath))
+  // User and Customer Service routes are handled locally below against the
+  // shared admin MongoDB. Do not proxy them to the platform backend, because
+  // the platform backend does not expose the admin chat/user-control routes.
+  const isCore=(req.method==='GET'&&(p==='/transactions'||txPath||productPath))
+    ||(req.method==='POST'&&(txPath||productPath))
     ||((req.method==='GET'||req.method==='PUT'||req.method==='PATCH'||req.method==='DELETE')&&(p==='/deposit-addresses'||productPath));
   if(!isCore) return next();
   if(p==='/deposit-addresses'){
