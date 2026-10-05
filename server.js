@@ -97,6 +97,38 @@ const Product = mongoose.model('AdminProduct', productSchema);
 const Transaction = mongoose.model('AdminTransaction', txSchema);
 const Message = mongoose.model('AdminMessage', msgSchema);
 const Audit = mongoose.model('AdminAudit', auditSchema);
+
+const PlatformSettingSchema = new mongoose.Schema({
+  key: { type: String, unique: true, index: true },
+  value: { type: mongoose.Schema.Types.Mixed, default: null },
+  updatedAt: { type: Date, default: Date.now }
+}, { collection: 'platform_settings' });
+const PlatformSetting = mongoose.model('AdminPlatformSetting', PlatformSettingSchema);
+
+const DEFAULT_DEPOSIT_ADDRESSES = {
+  'USDT-TRC20': 'TS3fFhpyCECAtEnV7gurRyojgKVznieun5',
+  'USDT-ERC20': '0x84a872810ab213eacb8ac8e9e962faf34cd9a72b',
+  'ETH-ERC20': '0x84a872810ab213eacb8ac8e9e962faf34cd9a72b',
+  'BTC-BTC': '176xzWWVLW5KsHoikVPatuinJJ6vMrvifW'
+};
+const SUPPORTED_CURRENCIES = ['USDT','USD','MXN','EUR','GBP','CAD','AUD','JPY','CNY','SGD','THB','MYR','BRL','INR','EGP'];
+function normCurrency(v){const x=String(v||'USDT').trim().toUpperCase();return SUPPORTED_CURRENCIES.includes(x)?x:'USDT';}
+function walletMap(user){
+  const raw=user&&user.balances&&typeof user.balances==='object'&&!Array.isArray(user.balances)?user.balances:{};
+  const out={};
+  for(const k of Object.keys(raw)){const n=Number(raw[k]);if(Number.isFinite(n))out[normCurrency(k)]=Number(n.toFixed(2));}
+  const cur=normCurrency(user&&user.currency);
+  if(!Object.prototype.hasOwnProperty.call(out,cur))out[cur]=Number(Number(user&&user.balance||0).toFixed(2));
+  return out;
+}
+function syncLegacyBalance(user){const cur=normCurrency(user.currency);const w=walletMap(user);user.balances=w;user.balance=Number(w[cur]||0);return w;}
+function setWalletBalance(user,currency,amount){
+  const cur=normCurrency(currency),n=Number(amount);
+  if(!Number.isFinite(n)||n<0)throw new Error('Invalid balance amount');
+  const w=walletMap(user);w[cur]=Number(n.toFixed(2));user.balances=w;
+  if(normCurrency(user.currency)===cur)user.balance=w[cur];
+}
+
 const adminAccountSchema = new mongoose.Schema({
   username: { type: String, unique: true, index: true, trim: true },
   passwordHash: { type: String, required: true },
