@@ -402,10 +402,15 @@ app.get('/api/admin/users', auth, async (req, res) => {
   }
 });
 
+const ADMIN_CURRENCY_RATES={USDT:1,USD:1,MXN:18.5,EUR:0.86,GBP:0.75,CAD:1.38,AUD:1.51,JPY:148,CNY:7.1,SGD:1.28,THB:32.5,MYR:4.25,BRL:5.35,INR:88,EGP:51.75};
+function adminCurrency(v){const c=String(v||'USDT').trim().toUpperCase();return Object.prototype.hasOwnProperty.call(ADMIN_CURRENCY_RATES,c)?c:'USDT'}
+function toUSDT(amount,currency){const c=adminCurrency(currency);return Number(amount||0)/(ADMIN_CURRENCY_RATES[c]||1)}
 async function adjustBalance(req, res) {
   try {
-    const delta = Number(req.body.delta);
-    if (!Number.isFinite(delta) || delta === 0) return res.status(400).json({ success: false, message: 'Invalid balance adjustment' });
+    const rawDelta = Number(req.body.delta);
+    if (!Number.isFinite(rawDelta) || rawDelta === 0) return res.status(400).json({ success: false, message: 'Invalid balance adjustment' });
+    const inputCurrency=adminCurrency(req.body.currency||'USDT');
+    const delta=Number(toUSDT(rawDelta,inputCurrency).toFixed(2));
     const user = await findScopedUser(req, req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found' });
     const nextBalance = Number((Number(user.balance || 0) + delta).toFixed(2));
@@ -413,9 +418,9 @@ async function adjustBalance(req, res) {
     user.balance = nextBalance;
     await user.save();
     await audit(req.admin, delta > 0 ? 'BALANCE_ADD' : 'BALANCE_SUBTRACT',
-      `${delta > 0 ? '+' : ''}${delta.toFixed(2)} ${user.currency}; new balance ${nextBalance.toFixed(2)}`,
+      `${delta > 0 ? '+' : ''}${delta.toFixed(2)} USDT primary balance; input ${rawDelta.toFixed(2)} ${inputCurrency}; new balance ${nextBalance.toFixed(2)} USDT`,
       { targetUserId: user._id });
-    res.json({ success: true, user: { id: user._id, username: user.username, balance: user.balance, currency: user.currency } });
+    res.json({ success: true, user: { id: user._id, username: user.username, balance: user.balance, currency: 'USDT' }, conversion: { inputAmount: rawDelta, inputCurrency, usdtAmount: delta } });
   } catch (error) {
     console.error('Balance update:', error.message);
     res.status(500).json({ success: false, message: 'Balance update failed' });
