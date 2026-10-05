@@ -452,6 +452,20 @@ app.use('/api/admin', auth, async (req,res,next)=>{
       return res.json({success:true,users});
     }
   }
+  if(req.method==='POST' && p.startsWith('/users/') && p.endsWith('/task-reset')){
+    try{
+      const id=p.split('/')[2];
+      const headers={'Content-Type':'application/json'};
+      if(req.headers.authorization) headers.Authorization=req.headers.authorization;
+      const list=await fetch(BACKEND_URL+'/api/admin/users',{method:'GET',headers});
+      const body=await list.text(); let data={}; try{data=JSON.parse(body)}catch{}
+      const user=(Array.isArray(data.users)?data.users:[]).find(u=>String(u._id||u.id)===String(id));
+      if(!user)return res.status(404).json({success:false,message:'User not found'});
+      const r=await fetch(BACKEND_URL+'/api/admin/users/'+id+'/vip',{method:'POST',headers,body:JSON.stringify({vipLevel:Number(user.vipLevel||0)})});
+      const text=await r.text(); let out; try{out=JSON.parse(text)}catch{out={success:false,message:'Backend returned non-JSON response'}}
+      return res.status(r.status).json(r.ok?{...out,taskReset:true,message:'Task reset to 0. Previous orders and profits were preserved.'}:out);
+    }catch(e){return res.status(502).json({success:false,message:'Main backend unavailable'});}
+  }
   if(req.method==='GET' && p==='/transactions'){
     try{
       const headers={'Content-Type':'application/json'};
