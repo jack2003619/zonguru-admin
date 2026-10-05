@@ -401,63 +401,8 @@ app.get('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperA
 app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});const body=req.body||{};const addresses={};for(const k of Object.keys(DEPOSIT_ADDRESS_DEFAULTS)){const v=String(body[k]??'').trim();if(!v)return res.status(400).json({success:false,message:'All deposit addresses are required.'});addresses[k]=v}const s=await PlatformSetting.findOneAndUpdate({key:'deposit_addresses'},{$set:{value:addresses,updatedAt:new Date()}},{upsert:true,new:true,setDefaultsOnInsert:true});await audit(req.admin,'DEPOSIT_ADDRESSES_UPDATE','Updated all deposit addresses');res.json({success:true,addresses:s.value})}catch(e){console.error('Save deposit addresses:',e.stack||e.message);res.status(500).json({success:false,message:'Failed to save deposit addresses'})}});
 
 
-/* Core user/transaction/customer-service data lives in the main Zonguru backend.
-   The admin UI stays here, while these routes securely bridge to that database. */
-const BACKEND_URL=String(process.env.BACKEND_URL||'https://zonguru-jack-api.onrender.com').replace(/\/$/,'');
-const BACKEND_BRIDGE_SECRET=String(process.env.BACKEND_BRIDGE_SECRET||'');
-async function backendBridge(path, options={}){
-  if(!BACKEND_BRIDGE_SECRET) throw new Error('Backend bridge is not configured');
-  const headers=Object.assign({'Content-Type':'application/json','X-Zonguru-Admin-Bridge':BACKEND_BRIDGE_SECRET},options.headers||{});
-  const controller=new AbortController();
-  const timer=setTimeout(()=>controller.abort(),12000);
-  try{
-    const response=await fetch(BACKEND_URL+path,{...options,headers,signal:controller.signal});
-    const text=await response.text();
-    let data;
-    try{data=text?JSON.parse(text):{};}catch{throw new Error('Backend returned non-JSON response ('+response.status+')');}
-    if(!response.ok||data.success===false) throw new Error(data.message||('Backend request failed: '+response.status));
-    return data;
-  }catch(e){
-    if(e?.name==='AbortError') throw new Error('Backend request timed out');
-    throw e;
-  }finally{clearTimeout(timer);}
-}
-function bridgeError(res,error){
-  console.error('Backend bridge:',error?.stack||error?.message||error);
-  return res.status(502).json({success:false,message:'Main backend connection failed: '+(error?.message||'Unknown backend error')});
-}
-
-app.get('/api/admin/users', auth, async (req,res)=>{
-  try{
-    const users=await User.find(scopedUserFilter(req)).select('-passwordHash').sort({createdAt:-1});
-    res.json({success:true,users});
-  }catch(e){res.status(500).json({success:false,message:'Failed to load users'});}
-});
-app.get('/api/admin/transactions', auth, async (req,res)=>{
-  try{
-    const transactions=await Transaction.find().sort({createdAt:-1}).limit(500);
-    res.json({success:true,transactions});
-  }catch(e){res.status(500).json({success:false,message:'Failed to load transactions'});}
-});
-app.post('/api/admin/users/:id/balance', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/balance',{method:'POST',body:JSON.stringify({delta:Number(req.body?.delta||0)})}));}catch(e){bridgeError(res,e);}});
-app.post('/api/admin/users/:id/balance-adjust', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/balance',{method:'POST',body:JSON.stringify({delta:Number(req.body?.delta||0)})}));}catch(e){bridgeError(res,e);}});
-app.post('/api/admin/users/:id/financial-settings', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/financial-settings',{method:'POST',body:JSON.stringify(req.body||{})}));}catch(e){bridgeError(res,e);}});
-app.post('/api/admin/users/:id/vip', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/vip',{method:'POST',body:JSON.stringify(req.body||{})}));}catch(e){bridgeError(res,e);}});
-app.get('/api/admin/users/:id/insufficient-balance', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/insufficient-balance'));}catch(e){bridgeError(res,e);}});
-app.post('/api/admin/users/:id/insufficient-balance', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/insufficient-balance',{method:'POST',body:JSON.stringify(req.body||{})}));}catch(e){bridgeError(res,e);}});
-app.post('/api/admin/users/:id/task-reset', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/task-reset',{method:'POST',body:'{}'}));}catch(e){bridgeError(res,e);}});
-app.get('/api/admin/users/:id/history', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/users/'+req.params.id+'/history'));}catch(e){bridgeError(res,e);}});
-app.post('/api/admin/transactions/:id/approve', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/transactions/'+req.params.id+'/approve',{method:'POST',body:'{}'}));}catch(e){bridgeError(res,e);}});
-app.post('/api/admin/transactions/:id/reject', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/transactions/'+req.params.id+'/reject',{method:'POST',body:JSON.stringify(req.body||{})}));}catch(e){bridgeError(res,e);}});
-app.get('/api/admin/chat/:userId', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/chat/'+req.params.userId));}catch(e){bridgeError(res,e);}});
-app.post('/api/admin/chat/:userId/reply', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/chat/'+req.params.userId+'/reply',{method:'POST',body:JSON.stringify(req.body||{})}));}catch(e){bridgeError(res,e);}});
-app.get('/api/admin/products', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/products'));}catch(e){bridgeError(res,e);}});
-app.post('/api/admin/products', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/products',{method:'POST',body:JSON.stringify(req.body||{})}));}catch(e){bridgeError(res,e);}});
-app.put('/api/admin/products/:id', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/products/'+req.params.id,{method:'PUT',body:JSON.stringify(req.body||{})}));}catch(e){bridgeError(res,e);}});
-app.patch('/api/admin/products/:id', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/products/'+req.params.id,{method:'PATCH',body:JSON.stringify(req.body||{})}));}catch(e){bridgeError(res,e);}});
-app.delete('/api/admin/products/:id', auth, async (req,res)=>{try{res.json(await backendBridge('/api/internal/admin/products/'+req.params.id,{method:'DELETE',body:'{}'}));}catch(e){bridgeError(res,e);}});
-app.get('/api/admin/audits', auth, async (req,res)=>{res.json({success:true,audits:[]});});
-
+/* Admin data is handled directly against the same Zonguru MongoDB used by the platform backend.
+   Keep these routes local so admin actions do not depend on a missing /api/internal bridge. */
 app.get('/api/admin/users', auth, async (req, res) => {
   try {
     const users = await User.find(scopedUserFilter(req)).select('-passwordHash').sort({ createdAt: -1 });
