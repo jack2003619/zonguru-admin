@@ -396,6 +396,10 @@ app.post('/api/admin/invite-codes/:id/revoke', auth, async (req, res) => {
   }
 });
 
+const DEPOSIT_ADDRESS_DEFAULTS={'USDT-TRC20':'TS3fFhpyCECAtEnV7gurRyojgKVznieun5','USDT-ERC20':'0x84a872810ab213eacb8ac8e9e962faf34cd9a72b','ETH-ERC20':'0x84a872810ab213eacb8ac8e9e962faf34cd9a72b','BTC-BTC':'176xzWWVLW5KsHoikVPatuinJJ6vMrvifW'};
+app.get('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});const s=await PlatformSetting.findOne({key:'deposit_addresses'}).lean();res.json({success:true,addresses:{...DEPOSIT_ADDRESS_DEFAULTS,...(s?.value||{})}})}catch(e){console.error('Load deposit addresses:',e.message);res.status(500).json({success:false,message:'Failed to load deposit addresses'})}});
+app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});const body=req.body||{};const addresses={};for(const k of Object.keys(DEPOSIT_ADDRESS_DEFAULTS)){const v=String(body[k]??'').trim();if(!v)return res.status(400).json({success:false,message:'All deposit addresses are required.'});addresses[k]=v}const s=await PlatformSetting.findOneAndUpdate({key:'deposit_addresses'},{$set:{value:addresses,updatedAt:new Date()}},{upsert:true,new:true,setDefaultsOnInsert:true});await audit(req.admin,'DEPOSIT_ADDRESSES_UPDATE','Updated all deposit addresses');res.json({success:true,addresses:s.value})}catch(e){console.error('Save deposit addresses:',e.stack||e.message);res.status(500).json({success:false,message:'Failed to save deposit addresses'})}});
+
 app.get('/api/admin/users', auth, async (req, res) => {
   try {
     const users = await User.find(scopedUserFilter(req)).select('-passwordHash').sort({ createdAt: -1 });
@@ -420,6 +424,8 @@ async function adjustBalance(req, res) {
     const nextBalance = Number((Number(user.balance || 0) + delta).toFixed(2));
     if (nextBalance < 0) return res.status(400).json({ success: false, message: 'Balance cannot be negative' });
     user.balance = nextBalance;
+    if (!user.balances || typeof user.balances !== 'object' || Array.isArray(user.balances)) user.balances = {};
+    user.balances.USDT = nextBalance;
     await user.save();
     await audit(req.admin, delta > 0 ? 'BALANCE_ADD' : 'BALANCE_SUBTRACT',
       `${delta > 0 ? '+' : ''}${delta.toFixed(2)} USDT primary balance; input ${rawDelta.toFixed(2)} ${inputCurrency}; new balance ${nextBalance.toFixed(2)} USDT`,
@@ -518,6 +524,8 @@ app.post('/api/admin/users/:id/task-reset', auth, async (req, res) => {
   }
 });
 
+app.get('/api/admin/users/:id/history', auth, async (req,res)=>{try{const user=await findScopedUser(req,req.params.id);if(!user)return res.status(404).json({success:false,message:'User not found'});const txs=await Transaction.find({userId:user._id}).sort({createdAt:-1}).limit(500).lean();const audits=await Audit.find({targetUserId:user._id}).sort({createdAt:-1}).limit(500).lean();const history=[...txs.map(t=>({createdAt:t.createdAt,type:t.type,amount:t.amount,status:t.status,note:t.note||''})),...audits.map(a=>({createdAt:a.createdAt,type:a.action,amount:0,status:'audit',details:a.details||''}))].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));res.json({success:true,user:{id:user._id,username:user.username,balance:Number(user.balance||0)},history})}catch(e){console.error('User history:',e.message);res.status(500).json({success:false,message:'Failed to load user history'})}});
+
 app.get('/api/admin/transactions', auth, async (req, res) => {
   try {
     const userIds = await getScopedUserIds(req);
@@ -544,6 +552,8 @@ app.post('/api/admin/transactions/:id/approve', auth, async (req, res) => {
         return res.status(400).json({ success: false, message: 'User balance is insufficient' });
       user.balance = Number((Number(user.balance || 0) - amount).toFixed(2));
     }
+    if (!user.balances || typeof user.balances !== 'object' || Array.isArray(user.balances)) user.balances = {};
+    user.balances.USDT = Number(user.balance || 0);
     transaction.status = 'approved';
     await user.save();
     await transaction.save();
