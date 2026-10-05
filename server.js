@@ -544,29 +544,59 @@ app.post('/api/admin/transactions/:id/approve', auth, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Transaction is not pending' });
     const user = await findScopedUser(req, transaction.userId);
     if (!user) return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
+
     const amount = Number(transaction.amount || 0);
+    const currency = adminCurrency(transaction.currency || 'USDT');
     const type = String(transaction.type || '').toLowerCase();
-    if (type === 'deposit') user.balance = Number((Number(user.balance || 0) + amount).toFixed(2));
-    if (type === 'withdraw' || type === 'withdrawal') {
-      if (Number(user.balance || 0) < amount)
-        return res.status(400).json({ success: false, message: 'User balance is insufficient' });
-      user.balance = Number((Number(user.balance || 0) - amount).toFixed(2));
-    }
+    if (!Number.isFinite(amount) || amount <= 0)
+      return res.status(400).json({ success: false, message: 'Invalid transaction amount' });
+
     if (!user.balances || typeof user.balances !== 'object' || Array.isArray(user.balances)) user.balances = {};
-    user.balances.USDT = Number(user.balance || 0);
+
+    if (type === 'deposit') {
+      const current = Number(user.balances[currency] || 0);
+      user.balances[currency] = Number((current + amount).toFixed(2));
+    } else if (type === 'withdraw' || type === 'withdrawal') {
+      // New withdrawals are already reserved/debited when the user submits.
+      // Approve must NOT deduct again.
+      if (!transaction.reserved) {
+        const debitCurrency = adminCurrency(transaction.debitedCurrency || currency);
+        const debitAmount = Number(transaction.debitedAmount || amount);
+        const current = Number(user.balances[debitCurrency] || 0);
+        if (current < debitAmount)
+          return res.status(400).json({ success: false, message: 'User balance is insufficient', currency: debitCurrency });
+        user.balances[debitCurrency] = Number((current - debitAmount).toFixed(2));
+      }
+    } else {
+      return res.status(400).json({ success: false, message: 'Unsupported transaction type' });
+    }
+
+    if (type === 'deposit') {
+      // Keep the primary legacy field synchronized only for USDT deposits.
+      if (currency === 'USDT') user.balance = Number(user.balances.USDT || 0);
+    } else if ((transaction.debitedCurrency || currency) === 'USDT') {
+      user.balance = Number(user.balances.USDT || 0);
+    }
+
     transaction.status = 'approved';
+    transaction.reviewedAt = new Date();
     await user.save();
     await transaction.save();
+
+    const label = amount.toFixed(2) + ' ' + currency;
     await Message.create({
       userId: user._id, subject: 'Customer Service', sender: 'admin',
-      text: type === 'deposit' ? 'Deposit request was approved.' : 'Withdrawal request was approved.',
+      text: type === 'deposit'
+        ? 'Deposit request approved: ' + label + ' was added to your balance.'
+        : 'Withdrawal request approved: ' + label + ' was processed.',
       read: false
     });
-    await audit(req.admin, 'TRANSACTION_APPROVE', `${transaction.type} ${amount}`,
+    await audit(req.admin, 'TRANSACTION_APPROVE',
+      type + ' ' + label + (transaction.reserved ? ' (withdrawal already reserved)' : ''),
       { targetUserId: user._id, targetTransactionId: transaction._id });
-    res.json({ success: true, message: 'Transaction approved' });
+    res.json({ success: true, message: 'Transaction approved', currency, amount });
   } catch (error) {
-    console.error('Approve transaction:', error.message);
+    console.error('Approve transaction:', error.stack || error.message);
     res.status(500).json({ success: false, message: 'Transaction approval failed' });
   }
 });
@@ -576,23 +606,47 @@ app.post('/api/admin/transactions/:id/reject', auth, async (req, res) => {
     const transaction = await Transaction.findById(req.params.id);
     if (!transaction || transaction.status !== 'pending')
       return res.status(400).json({ success: false, message: 'Transaction is not pending' });
-    if (!await findScopedUser(req, transaction.userId))
-      return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
+    const user = await findScopedUser(req, transaction.userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User not found or not assigned to this admin' });
+
+    const reason = String(req.body.reason ?? req.body.note ?? '').trim();
+    if (!reason) return res.status(400).json({ success: false, message: 'Rejection reason is required' });
+
+    const type = String(transaction.type || '').toLowerCase();
+    const currency = adminCurrency(transaction.currency || 'USDT');
+    const amount = Number(transaction.amount || 0);
+
+    if (!user.balances || typeof user.balances !== 'object' || Array.isArray(user.balances)) user.balances = {};
+
+    if ((type === 'withdraw' || type === 'withdrawal') && transaction.reserved) {
+      const refundCurrency = adminCurrency(transaction.debitedCurrency || currency);
+      const refundAmount = Number(transaction.debitedAmount || amount);
+      user.balances[refundCurrency] = Number((Number(user.balances[refundCurrency] || 0) + refundAmount).toFixed(2));
+      if (refundCurrency === 'USDT') user.balance = Number(user.balances.USDT || 0);
+    }
+
     transaction.status = 'rejected';
-    const note = String(req.body.note || '').trim();
-    if (note) transaction.note = `${transaction.note || ''}${transaction.note ? ' | ' : ''}${note}`;
+    transaction.rejectionReason = reason;
+    transaction.note = reason;
+    transaction.reviewedAt = new Date();
+    await user.save();
     await transaction.save();
+
+    const refundText = (type === 'withdraw' || type === 'withdrawal') && transaction.reserved
+      ? ' Your submitted amount was returned to your ' + adminCurrency(transaction.debitedCurrency || currency) + ' balance.'
+      : '';
     await Message.create({
-      userId: transaction.userId, subject: 'Customer Service', sender: 'admin',
-      text: transaction.type === 'deposit' ? 'Deposit request was rejected.' : 'Withdrawal request was rejected.',
+      userId: user._id, subject: 'Customer Service', sender: 'admin',
+      text: (type === 'deposit' ? 'Deposit request rejected.' : 'Withdrawal request rejected.') +
+        ' Reason: ' + reason + refundText,
       read: false
     });
     await audit(req.admin, 'TRANSACTION_REJECT',
-      `${transaction.type} ${transaction.amount}${note ? ' - ' + note : ''}`,
-      { targetUserId: transaction.userId, targetTransactionId: transaction._id });
-    res.json({ success: true, message: 'Transaction rejected' });
+      type + ' ' + amount.toFixed(2) + ' ' + currency + ' - ' + reason,
+      { targetUserId: user._id, targetTransactionId: transaction._id });
+    res.json({ success: true, message: 'Transaction rejected', reason, refunded: type === 'withdraw' || type === 'withdrawal' ? Boolean(transaction.reserved) : false });
   } catch (error) {
-    console.error('Reject transaction:', error.message);
+    console.error('Reject transaction:', error.stack || error.message);
     res.status(500).json({ success: false, message: 'Transaction rejection failed' });
   }
 });
