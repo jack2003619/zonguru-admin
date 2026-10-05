@@ -424,9 +424,10 @@ app.use('/api/admin', auth, async (req,res,next)=>{
   const userPath=p.startsWith('/users/');
   const txPath=p.startsWith('/transactions/');
   const chatPath=p.startsWith('/chat/');
-  const isCore=(req.method==='GET'&&(p==='/users'||p==='/transactions'||userPath||chatPath))
-    ||(req.method==='POST'&&(userPath||txPath||chatPath))
-    ||((req.method==='GET'||req.method==='PUT')&&p==='/deposit-addresses');
+  const productPath=p.startsWith('/products');
+  const isCore=(req.method==='GET'&&(p==='/users'||p==='/transactions'||userPath||chatPath||productPath))
+    ||(req.method==='POST'&&(userPath||txPath||chatPath||productPath))
+    ||((req.method==='GET'||req.method==='PUT'||req.method==='PATCH'||req.method==='DELETE')&&(p==='/deposit-addresses'||productPath));
   if(!isCore) return next();
   if(p==='/deposit-addresses'){
     if(req.method==='GET') return proxyBackend(req,res,'/api/public/deposit-addresses');
