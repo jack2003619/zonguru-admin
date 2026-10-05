@@ -403,7 +403,7 @@ app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperA
 
 /* Core user/transaction/customer-service data lives in the main Zonguru backend.
    The admin UI stays here, while these routes securely bridge to that database. */
-const BACKEND_URL=String(process.env.BACKEND_URL||'https://zonguru-jack-api.onrender.com').replace(/\\/$/,'');
+const BACKEND_URL=String(process.env.BACKEND_URL||'https://zonguru-jack-api.onrender.com').replace(/\/$/,'');
 const BACKEND_BRIDGE_SECRET=String(process.env.BACKEND_BRIDGE_SECRET||'');
 async function backendBridge(path, options={}){
   if(!BACKEND_BRIDGE_SECRET) throw new Error('Backend bridge is not configured');
