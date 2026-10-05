@@ -433,6 +433,48 @@ app.use('/api/admin', auth, async (req,res,next)=>{
     if(req.method==='GET') return proxyBackend(req,res,'/api/public/deposit-addresses');
     return proxyBackend(req,res,'/api/internal/deposit-addresses');
   }
+  // Read legacy transaction/chat records from both the Admin DB and the
+  // deployed platform backend. This preserves older records if they were
+  // written before the two services were separated.
+  if(req.method==='GET' && p==='/transactions'){
+    try{
+      const headers={'Content-Type':'application/json'};
+      if(req.headers.authorization) headers.Authorization=req.headers.authorization;
+      const r=await fetch(BACKEND_URL+'/api/admin/transactions',{method:'GET',headers});
+      const text=await r.text(); let remote={}; try{remote=JSON.parse(text)}catch{}
+      const local=await Transaction.find().sort({createdAt:-1}).limit(500).lean();
+      const merged=[...(Array.isArray(remote.transactions)?remote.transactions:[]),...local];
+      const seen=new Set();
+      const transactions=merged.filter(t=>{
+        const key=String(t._id||'')+'|'+String(t.userId||'')+'|'+String(t.createdAt||'')+'|'+String(t.type||'')+'|'+String(t.amount||'');
+        if(seen.has(key))return false; seen.add(key); return true;
+      }).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,500);
+      return res.status(r.ok?200:r.status).json({success:r.ok||transactions.length>0,transactions});
+    }catch(e){
+      const transactions=await Transaction.find().sort({createdAt:-1}).limit(500);
+      return res.json({success:true,transactions});
+    }
+  }
+  if(req.method==='GET' && p.startsWith('/chat/')){
+    try{
+      const userId=p.split('/')[2];
+      const headers={'Content-Type':'application/json'};
+      if(req.headers.authorization) headers.Authorization=req.headers.authorization;
+      const r=await fetch(BACKEND_URL+p,{method:'GET',headers});
+      const text=await r.text(); let remote={}; try{remote=JSON.parse(text)}catch{}
+      const local=await Message.find({userId}).sort({createdAt:1}).lean();
+      const merged=[...(Array.isArray(remote.messages)?remote.messages:[]),...local];
+      const seen=new Set();
+      const messages=merged.filter(m=>{
+        const key=String(m._id||'')+'|'+String(m.userId||'')+'|'+String(m.createdAt||'')+'|'+String(m.sender||'')+'|'+String(m.text||'');
+        if(seen.has(key))return false; seen.add(key); return true;
+      }).sort((a,b)=>new Date(a.createdAt||0)-new Date(b.createdAt||0));
+      return res.status(r.ok?200:r.status).json({success:r.ok||messages.length>0,messages});
+    }catch(e){
+      const messages=await Message.find({userId:p.split('/')[2]}).sort({createdAt:1});
+      return res.json({success:true,messages});
+    }
+  }
   return proxyBackend(req,res,'/api/admin'+p);
 });
 
