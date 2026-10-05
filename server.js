@@ -421,9 +421,12 @@ async function proxyBackend(req,res,targetPath){
 }
 app.use('/api/admin', auth, async (req,res,next)=>{
   const p=req.path;
-  const isCore=(req.method==='GET'&&(/^\\/users$/.test(p)||/^\\/users\\/[0-9a-fA-F]{24}\\/(balances|history)$/.test(p)||p==='/transactions'||/^\\/chat\\/[0-9a-fA-F]{24}$/.test(p)))
-    ||(req.method==='POST'&&(/^\\/users\\/[0-9a-fA-F]{24}\\/(balance|financial-settings|insufficient-balance|vip|task-reset)$/.test(p)||/^\\/transactions\\/[0-9a-fA-F]{24}\\/(approve|reject)$/.test(p)||/^\\/chat\\/[0-9a-fA-F]{24}\\/reply$/.test(p)))
-    ||(req.method==='GET'&&p==='/deposit-addresses')||(req.method==='PUT'&&p==='/deposit-addresses');
+  const userPath=p.startsWith('/users/');
+  const txPath=p.startsWith('/transactions/');
+  const chatPath=p.startsWith('/chat/');
+  const isCore=(req.method==='GET'&&(p==='/users'||p==='/transactions'||userPath||chatPath))
+    ||(req.method==='POST'&&(userPath||txPath||chatPath))
+    ||((req.method==='GET'||req.method==='PUT')&&p==='/deposit-addresses');
   if(!isCore) return next();
   if(p==='/deposit-addresses'){
     if(req.method==='GET') return proxyBackend(req,res,'/api/public/deposit-addresses');
