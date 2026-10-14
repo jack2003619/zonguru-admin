@@ -80,16 +80,27 @@ const currencyRates={USDT:1,USD:1,MXN:18.5,EUR:0.86,GBP:0.75,CAD:1.38,AUD:1.51,J
 const currencyLabels={USDT:'USDT',USD:'USD',MXN:'MXN',EUR:'EUR',GBP:'GBP',CAD:'CAD',AUD:'AUD',JPY:'JPY',CNY:'CNY',SGD:'SGD',THB:'THB',MYR:'MYR',BRL:'BRL',INR:'INR',EGP:'EGP'};
 const $=id=>document.getElementById(id);const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
 async function api(path,opt={}){opt.headers=opt.headers||{};opt.headers['Content-Type']='application/json';if(token)opt.headers.Authorization='Bearer '+token;const r=await fetch(API+path,opt);const d=await r.json().catch(()=>({}));if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
-async function login(){try{const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({username:$('lu').value.trim(),password:$('lp').value})});token=d.token;localStorage.setItem('zonguru_admin_token',token);start()}catch(e){msg('loginMsg',e.message)}}function logout(){localStorage.removeItem('zonguru_admin_token');location.reload()}
+async function login(){
+  const button=$('login').querySelector('button');
+  button.disabled=true;button.textContent='Signing in…';$('loginMsg').innerHTML='';
+  try{
+    const d=await api('/api/admin/login',{method:'POST',body:JSON.stringify({username:$('lu').value.trim(),password:$('lp').value})});
+    if(!d.token)throw Error('Login response did not include a token. Please contact support.');
+    token=d.token;localStorage.setItem('zonguru_admin_token',token);
+    await start();
+  }catch(e){token='';localStorage.removeItem('zonguru_admin_token');msg('loginMsg',e.message||'Login failed. Please check the connection and try again.');}
+  finally{button.disabled=false;button.textContent='Login'}
+}
+function logout(){localStorage.removeItem('zonguru_admin_token');token='';location.reload()}
 async function start(){
-  $('login').classList.add('hidden');$('app').classList.remove('hidden');
   try{
     const d=await api('/api/admin/me'); currentAdmin=d.admin||null;
     $('adminTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');$('platformTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');
     const sub=document.querySelector('header .sub');
     if(sub) sub.textContent=(currentAdmin?.adminType==='superadmin'?'Main Admin':'Second Admin')+' · '+(currentAdmin?.username||'');
+    $('login').classList.add('hidden');$('app').classList.remove('hidden');
     await loadUsers();
-  }catch(e){logout()}
+  }catch(e){throw Error('Login could not finish: '+(e.message||'admin session check failed'));}
 }
 function tab(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
