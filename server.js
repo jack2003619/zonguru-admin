@@ -531,25 +531,55 @@ function adminCurrency(v){const c=String(v||'USDT').trim().toUpperCase();return 
 function toUSDT(amount,currency){const c=adminCurrency(currency);return Number(amount||0)/(ADMIN_CURRENCY_RATES[c]||1)}
 async function adjustBalance(req, res) {
   try {
-    const rawDelta = Number(req.body.delta);
-    if (!Number.isFinite(rawDelta) || rawDelta === 0) return res.status(400).json({ success: false, message: 'Invalid balance adjustment' });
-    const inputCurrency=adminCurrency(req.body.currency||'USDT');
-    const delta=Number(toUSDT(rawDelta,inputCurrency).toFixed(2));
-    const user = await findScopedUser(req, req.params.id);
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    const nextBalance = Number((Number(user.balance || 0) + delta).toFixed(2));
-    if (nextBalance < 0) return res.status(400).json({ success: false, message: 'Balance cannot be negative' });
-    user.balance = nextBalance;
-    if (!user.balances || typeof user.balances !== 'object' || Array.isArray(user.balances)) user.balances = {};
-    user.balances.USDT = nextBalance;
-    await user.save();
-    await audit(req.admin, delta > 0 ? 'BALANCE_ADD' : 'BALANCE_SUBTRACT',
-      `${delta > 0 ? '+' : ''}${delta.toFixed(2)} USDT primary balance; input ${rawDelta.toFixed(2)} ${inputCurrency}; new balance ${nextBalance.toFixed(2)} USDT`,
-      { targetUserId: user._id });
-    res.json({ success: true, user: { id: user._id, username: user.username, balance: user.balance, currency: 'USDT' }, conversion: { inputAmount: rawDelta, inputCurrency, usdtAmount: delta } });
+    const rawDelta = Number(req.body.amount ?? req.body.delta);
+    if (!Number.isFinite(rawDelta) || rawDelta === 0) {
+      return res.status(400).json({ success: false, message: 'Enter a non-zero balance change' });
+    }
+    const inputCurrency = adminCurrency(req.body.currency || 'USDT');
+
+    // Keep the admin's existing per-user scope check, but never write a
+    // second/local copy of the balance. The platform backend is authoritative.
+    const scopedUser = await findScopedUser(req, req.params.id);
+    if (!scopedUser) return res.status(404).json({ success: false, message: 'User not found' });
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (req.headers.authorization) headers.Authorization = req.headers.authorization;
+    const remote = await fetch(BACKEND_URL + '/api/admin/users/' + encodeURIComponent(req.params.id) + '/balance', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ amount: rawDelta, currency: inputCurrency })
+    });
+    const rawText = await remote.text();
+    let result;
+    try { result = JSON.parse(rawText); }
+    catch { result = { success: false, message: 'Backend returned non-JSON response' }; }
+
+    if (!remote.ok || result.success !== true) {
+      return res.status(remote.status || 502).json({
+        success: false,
+        message: result.message || 'The platform backend did not confirm the balance update. No local balance was changed.'
+      });
+    }
+
+    const usdtDelta = Number(result.amount ?? result.conversion?.usdtAmount ?? toUSDT(rawDelta, inputCurrency));
+    const newBalance = Number(result.newBalance ?? result.balances?.USDT ?? result.user?.balances?.USDT ?? result.user?.balance ?? 0);
+    const targetId = result.user?.id || result.user?._id || scopedUser._id;
+    await audit(req.admin, usdtDelta > 0 ? 'BALANCE_ADD' : 'BALANCE_SUBTRACT',
+      `${usdtDelta > 0 ? '+' : ''}${usdtDelta.toFixed(2)} USDT primary balance; input ${rawDelta.toFixed(2)} ${inputCurrency}; backend-confirmed balance ${newBalance.toFixed(2)} USDT`,
+      { targetUserId: targetId });
+
+    return res.json({
+      ...result,
+      success: true,
+      conversion: { inputAmount: rawDelta, inputCurrency, usdtAmount: usdtDelta },
+      source: 'platform-backend'
+    });
   } catch (error) {
-    console.error('Balance update:', error.message);
-    res.status(500).json({ success: false, message: 'Balance update failed' });
+    console.error('Balance update proxy:', error.message);
+    return res.status(502).json({
+      success: false,
+      message: 'Main backend unavailable. The balance was not changed by the admin server; check the user account before retrying.'
+    });
   }
 }
 app.post('/api/admin/users/:id/balance-adjust', auth, adjustBalance);
