@@ -518,11 +518,29 @@ app.use('/api/admin', auth, async (req,res,next)=>{
 
 app.get('/api/admin/users', auth, async (req, res) => {
   try {
-    const users = await User.find(scopedUserFilter(req)).select('-passwordHash').sort({ createdAt: -1 });
-    res.json({ success: true, users });
+    // User accounts and their balances are authoritative in the platform backend.
+    // Never display the admin server's potentially stale local copy as the balance source.
+    const headers = { 'Content-Type': 'application/json' };
+    if (req.headers.authorization) headers.Authorization = req.headers.authorization;
+    const remote = await fetch(BACKEND_URL + '/api/admin/users', { method: 'GET', headers });
+    const rawText = await remote.text();
+    let result;
+    try { result = JSON.parse(rawText); }
+    catch { result = { success: false, message: 'Backend returned non-JSON response' }; }
+    if (!remote.ok || result.success !== true || !Array.isArray(result.users)) {
+      return res.status(remote.status || 502).json({
+        success: false,
+        message: result.message || 'Unable to load authoritative users from platform backend'
+      });
+    }
+    const users = result.users.filter(user =>
+      user.role === 'user' &&
+      (isSuperAdmin(req) || String(user.ownerAdminId || '') === String(req.admin.id))
+    );
+    return res.json({ success: true, users, source: 'platform-backend' });
   } catch (error) {
-    console.error('Load users:', error.message);
-    res.status(500).json({ success: false, message: 'Failed to load users' });
+    console.error('Load users from platform backend:', error.message);
+    return res.status(502).json({ success: false, message: 'Main backend unavailable; user balances were not loaded from a stale copy' });
   }
 });
 
@@ -536,14 +554,28 @@ async function adjustBalance(req, res) {
       return res.status(400).json({ success: false, message: 'Enter a non-zero balance change' });
     }
     const inputCurrency = adminCurrency(req.body.currency || 'USDT');
-
-    // Keep the admin's existing per-user scope check, but never write a
-    // second/local copy of the balance. The platform backend is authoritative.
-    const scopedUser = await findScopedUser(req, req.params.id);
-    if (!scopedUser) return res.status(404).json({ success: false, message: 'User not found' });
-
     const headers = { 'Content-Type': 'application/json' };
     if (req.headers.authorization) headers.Authorization = req.headers.authorization;
+
+    // Confirm the selected account exists in the authoritative backend and
+    // enforce the second-admin ownership boundary before changing its balance.
+    const listResponse = await fetch(BACKEND_URL + '/api/admin/users', { method: 'GET', headers });
+    const listText = await listResponse.text();
+    let listResult;
+    try { listResult = JSON.parse(listText); }
+    catch { listResult = { success: false, message: 'Backend returned non-JSON response' }; }
+    if (!listResponse.ok || listResult.success !== true || !Array.isArray(listResult.users)) {
+      return res.status(listResponse.status || 502).json({
+        success: false,
+        message: listResult.message || 'Unable to verify user in platform backend; balance was not changed'
+      });
+    }
+    const target = listResult.users.find(user => String(user._id || user.id) === String(req.params.id) && user.role === 'user');
+    if (!target) return res.status(404).json({ success: false, message: 'User not found in platform backend' });
+    if (!isSuperAdmin(req) && String(target.ownerAdminId || '') !== String(req.admin.id)) {
+      return res.status(403).json({ success: false, message: 'This user is outside your invite-code scope' });
+    }
+
     const remote = await fetch(BACKEND_URL + '/api/admin/users/' + encodeURIComponent(req.params.id) + '/balance', {
       method: 'POST',
       headers,
@@ -557,13 +589,13 @@ async function adjustBalance(req, res) {
     if (!remote.ok || result.success !== true) {
       return res.status(remote.status || 502).json({
         success: false,
-        message: result.message || 'The platform backend did not confirm the balance update. No local balance was changed.'
+        message: result.message || 'The platform backend did not confirm the balance update. No balance was changed by the admin server.'
       });
     }
 
     const usdtDelta = Number(result.amount ?? result.conversion?.usdtAmount ?? toUSDT(rawDelta, inputCurrency));
     const newBalance = Number(result.newBalance ?? result.balances?.USDT ?? result.user?.balances?.USDT ?? result.user?.balance ?? 0);
-    const targetId = result.user?.id || result.user?._id || scopedUser._id;
+    const targetId = result.user?.id || result.user?._id || target._id;
     await audit(req.admin, usdtDelta > 0 ? 'BALANCE_ADD' : 'BALANCE_SUBTRACT',
       `${usdtDelta > 0 ? '+' : ''}${usdtDelta.toFixed(2)} USDT primary balance; input ${rawDelta.toFixed(2)} ${inputCurrency}; backend-confirmed balance ${newBalance.toFixed(2)} USDT`,
       { targetUserId: targetId });
