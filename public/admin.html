@@ -94,7 +94,9 @@ function initAdminCurrencyConverter(){
  a.addEventListener('change',update);b.addEventListener('change',update);$('adminConvAmountA').addEventListener('input',update);update();
 }
 
-const $=id=>document.getElementById(id);const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
+const $=id=>document.getElementById(id);
+initAdminCurrencyConverter();
+setInterval(pollTransactionNotice,20000);const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
 async function api(path,opt={}){opt.headers=opt.headers||{};opt.headers['Content-Type']='application/json';if(token)opt.headers.Authorization='Bearer '+token;const r=await fetch(API+path,opt);const d=await r.json().catch(()=>({}));if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
 async function login(){
   const button=$('login').querySelector('button');
@@ -108,8 +110,6 @@ async function login(){
   finally{button.disabled=false;button.textContent='Login'}
 }
 function logout(){localStorage.removeItem('zonguru_admin_token');token='';location.reload()}
-initAdminCurrencyConverter();
-setInterval(pollTransactionNotice,20000);
 async function start(){
   try{
     const d=await api('/api/admin/me'); currentAdmin=d.admin||null;
