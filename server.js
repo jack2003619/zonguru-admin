@@ -403,6 +403,39 @@ app.post('/api/admin/invite-codes/:id/revoke', auth, async (req, res) => {
   }
 });
 
+const DEFAULT_TELEGRAM_SUPPORT_URL='https://t.me/Zonguru_support';
+function normalizeTelegramSupportUrl(input){
+  let value=String(input||'').trim();
+  if(!value)value=DEFAULT_TELEGRAM_SUPPORT_URL;
+  if(/^@?[A-Za-z0-9_]{5,32}$/.test(value)) value='https://t.me/'+value.replace(/^@/,'');
+  if(!/^https?:\/\//i.test(value)) value='https://'+value;
+  let parsed;try{parsed=new URL(value)}catch{return null}
+  if(parsed.protocol!=='https:' || !['t.me','www.t.me'].includes(parsed.hostname.toLowerCase()) || !/^\/[A-Za-z0-9_]{5,32}\/?$/.test(parsed.pathname) || parsed.search || parsed.hash)return null;
+  return 'https://t.me/'+parsed.pathname.split('/').filter(Boolean)[0];
+}
+app.get('/api/public/telegram-support',async(req,res)=>{
+  try{
+    const s=await PlatformSetting.findOne({key:'telegram_support_url'}).lean();
+    res.set('Cache-Control','no-store');
+    res.json({success:true,url:normalizeTelegramSupportUrl(s?.value?.url)||DEFAULT_TELEGRAM_SUPPORT_URL});
+  }catch(e){res.json({success:true,url:DEFAULT_TELEGRAM_SUPPORT_URL});}
+});
+app.get('/api/admin/telegram-support',auth,async(req,res)=>{
+  if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
+  try{const s=await PlatformSetting.findOne({key:'telegram_support_url'}).lean();res.json({success:true,url:normalizeTelegramSupportUrl(s?.value?.url)||DEFAULT_TELEGRAM_SUPPORT_URL})}
+  catch(e){res.status(500).json({success:false,message:'Failed to load Telegram CS account'})}
+});
+app.put('/api/admin/telegram-support',auth,async(req,res)=>{
+  if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
+  const url=normalizeTelegramSupportUrl(req.body?.url);
+  if(!url)return res.status(400).json({success:false,message:'Enter a valid Telegram t.me username link, e.g. https://t.me/Zonguru_support'});
+  try{
+    await PlatformSetting.findOneAndUpdate({key:'telegram_support_url'},{$set:{value:{url},updatedAt:new Date()}},{upsert:true,new:true,setDefaultsOnInsert:true});
+    await audit(req.admin,'TELEGRAM_SUPPORT_UPDATE','Updated Telegram Customer Service link to '+url);
+    res.json({success:true,url,message:'Telegram CS account saved'});
+  }catch(e){res.status(500).json({success:false,message:'Failed to save Telegram CS account'})}
+});
+
 const DEPOSIT_ADDRESS_DEFAULTS={'USDT-TRC20':'TS3fFhpyCECAtEnV7gurRyojgKVznieun5','USDT-ERC20':'0x84a872810ab213eacb8ac8e9e962faf34cd9a72b','ETH-ERC20':'0x84a872810ab213eacb8ac8e9e962faf34cd9a72b','BTC-BTC':'176xzWWVLW5KsHoikVPatuinJJ6vMrvifW'};
 app.get('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});const s=await PlatformSetting.findOne({key:'deposit_addresses'}).lean();res.json({success:true,addresses:{...DEPOSIT_ADDRESS_DEFAULTS,...(s?.value||{})}})}catch(e){console.error('Load deposit addresses:',e.message);res.status(500).json({success:false,message:'Failed to load deposit addresses'})}});
 app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});const body=req.body||{};const addresses={};for(const k of Object.keys(DEPOSIT_ADDRESS_DEFAULTS)){const v=String(body[k]??'').trim();if(!v)return res.status(400).json({success:false,message:'All deposit addresses are required.'});addresses[k]=v}const s=await PlatformSetting.findOneAndUpdate({key:'deposit_addresses'},{$set:{value:addresses,updatedAt:new Date()}},{upsert:true,new:true,setDefaultsOnInsert:true});await audit(req.admin,'DEPOSIT_ADDRESSES_UPDATE','Updated all deposit addresses');res.json({success:true,addresses:s.value})}catch(e){console.error('Save deposit addresses:',e.stack||e.message);res.status(500).json({success:false,message:'Failed to save deposit addresses'})}});
