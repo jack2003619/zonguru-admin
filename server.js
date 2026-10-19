@@ -465,9 +465,8 @@ app.use('/api/admin', auth, async (req,res,next)=>{
       if(!target)return res.status(404).json({success:false,message:'User not found in platform backend'});
       if(!isSuperAdmin(req) && String(target.ownerAdminId||'')!==String(req.admin.id))
         return res.status(403).json({success:false,message:'This user is outside your invite-code scope'});
-      const result=await proxyBackend(req,res,'/api/admin'+p);
-      if(result && result.success) await audit(req.admin,'USER_PASSWORD_RESET',`Reset platform login password for user ${target.username}`,{targetUserId:passwordResetMatch[1]});
-      return result;
+      await audit(req.admin,'USER_PASSWORD_RESET_REQUEST',`Requested platform login password reset for user ${target.username}`,{targetUserId:passwordResetMatch[1]});
+      return proxyBackend(req,res,'/api/admin'+p);
     }catch(e){console.error('User password-reset proxy:',e.message);return res.status(502).json({success:false,message:'Main backend unavailable; password was not confirmed changed'});}
   }
   if(!isCore) return next();
