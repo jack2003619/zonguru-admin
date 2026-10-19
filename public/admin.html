@@ -95,8 +95,7 @@ function initAdminCurrencyConverter(){
 }
 
 const $=id=>document.getElementById(id);
-initAdminCurrencyConverter();
-setInterval(pollTransactionNotice,20000);const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
+const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
 async function api(path,opt={}){opt.headers=opt.headers||{};opt.headers['Content-Type']='application/json';if(token)opt.headers.Authorization='Bearer '+token;const r=await fetch(API+path,opt);const d=await r.json().catch(()=>({}));if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
 async function login(){
   const button=$('login').querySelector('button');
@@ -240,6 +239,8 @@ async function revokeInvite(id){
   if(!confirm('Revoke this invite code?'))return;
   try{await api('/api/admin/invite-codes/'+id+'/revoke',{method:'POST'});await loadAdminManagement()}catch(e){msg('adminMsg',e.message)}
 }
+try{initAdminCurrencyConverter()}catch(e){console.error('Currency converter init failed',e)}
+setInterval(()=>{try{pollTransactionNotice()}catch(e){console.error('Transaction notice polling failed',e)}},20000);
 $('lp').addEventListener('keydown',e=>{if(e.key==='Enter')login()});if(token)start();
 </script>
 </body></html>
