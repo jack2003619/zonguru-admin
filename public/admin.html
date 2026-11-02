@@ -145,8 +145,8 @@ async function start(){
 }
 function tab(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
-  ['users','transactions','products','chat','audits','admins','platform'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
-  if(t==='users')loadUsers();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();}if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
+  ['users','transactions','announcements','products','chat','audits','admins','platform'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
+  if(t==='users')loadUsers();if(t==='announcements')loadAnnouncements();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();}if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
 }
 async function loadUsers(){try{const d=await api('/api/admin/users');users=d.users||[];renderUsers();await loadFinancialSummary()}catch(e){msg('usersMsg',e.message)}}
 function renderUsers(){const q=String($('userSearch')?.value||'').trim().toLowerCase();const shown=users.filter(u=>(String(u.username||'')+' '+String(u.email||'')+' '+String(u.phone||'')+' '+uid(u)).toLowerCase().includes(q));$('usersBody').innerHTML=shown.map(u=>`<tr><td><b>${esc(u.username)}</b><br><span class="small">${esc(uid(u))}</span></td><td>${esc(u.email||'-')}<br>${esc(u.phone||'-')}</td><td>${money(u.balance)} USDT</td><td>${money(u.frozenAmount)}</td><td>${esc(u.creditScore??100)}</td><td>VIP ${esc(u.vipLevel??0)}</td><td><button class="secondary" onclick="openUser('${uid(u)}')">Settings</button><button class="secondary" onclick="openHistory('${uid(u)}')">History</button><button class="secondary" onclick="openChat('${uid(u)}')">Chat</button></td></tr>`).join('')||'<tr><td colspan="7">No matching users</td></tr>'}
