@@ -630,6 +630,26 @@ app.use('/api/admin', auth, async (req,res,next)=>{
       return proxyBackend(req,res,'/api/admin'+p);
     }catch(e){console.error('User password-reset proxy:',e.message);return res.status(502).json({success:false,message:'Main backend unavailable; password was not confirmed changed'});}
   }
+  if(p.startsWith('/users/') && p.endsWith('/bank-accounts') && req.method==='PUT'){
+    try{
+      const userId=p.split('/')[2];
+      const headers={'Content-Type':'application/json'};
+      if(req.headers.authorization) headers.Authorization=req.headers.authorization;
+      const listResponse=await fetch(BACKEND_URL+'/api/admin/users',{method:'GET',headers});
+      const listText=await listResponse.text();let listData={};try{listData=JSON.parse(listText)}catch{}
+      if(!listResponse.ok || listData.success!==true || !Array.isArray(listData.users))
+        return res.status(listResponse.status||502).json({success:false,message:listData.message||'Unable to verify user in platform backend'});
+      const target=listData.users.find(u=>String(u._id||u.id)===String(userId) && u.role==='user');
+      if(!target)return res.status(404).json({success:false,message:'User not found in platform backend'});
+      if(!isSuperAdmin(req) && String(target.ownerAdminId||'')!==String(req.admin.id))
+        return res.status(403).json({success:false,message:'This user is outside your invite-code scope'});
+      await audit(req.admin,'USER_BANK_ACCOUNTS_UPDATE_REQUEST','Requested bank information update for '+target.username,{targetUserId:userId});
+      return proxyBackend(req,res,'/api/admin'+p);
+    }catch(e){
+      console.error('User bank-accounts proxy:',e.stack||e.message);
+      return res.status(502).json({success:false,message:'Main backend unavailable; bank information was not confirmed saved'});
+    }
+  }
   if(!isCore) return next();
   if(p==='/deposit-addresses'){
     if(req.method==='GET') return proxyBackend(req,res,'/api/public/deposit-addresses');
