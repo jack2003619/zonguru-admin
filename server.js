@@ -750,10 +750,22 @@ app.get('/api/admin/users', auth, async (req, res) => {
         message: result.message || 'Unable to load authoritative users from platform backend'
       });
     }
-    const users = result.users.filter(user =>
+    let users = result.users.filter(user =>
       user.role === 'user' &&
       (isSuperAdmin(req) || String(user.ownerAdminId || '') === String(req.admin.id))
     );
+    // Only Main Admin receives the originating Second Admin name.
+    if (isSuperAdmin(req)) {
+      const ownerIds = [...new Set(users.map(u => String(u.ownerAdminId || '')).filter(Boolean))];
+      const owners = ownerIds.length
+        ? await AdminAccount.find({ _id: { $in: ownerIds } }).select('username').lean()
+        : [];
+      const ownerNames = new Map(owners.map(a => [String(a._id), a.username]));
+      users = users.map(user => ({
+        ...user,
+        secondAdminName: ownerNames.get(String(user.ownerAdminId || '')) || user.ownerAdminUsername || ''
+      }));
+    }
     return res.json({ success: true, users, source: 'platform-backend' });
   } catch (error) {
     console.error('Load users from platform backend:', error.message);
