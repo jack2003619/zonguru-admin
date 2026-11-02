@@ -594,9 +594,12 @@ app.use('/api/admin', auth, async (req,res,next)=>{
   // User and Customer Service routes are handled locally below against the
   // shared admin MongoDB. Do not proxy them to the platform backend, because
   // the platform backend does not expose the admin chat/user-control routes.
-  const isCore=(req.method==='GET'&&(p==='/transactions'||txPath||productPath))
-    ||(req.method==='POST'&&(txPath||productPath))
-    ||((req.method==='GET'||req.method==='PUT'||req.method==='PATCH'||req.method==='DELETE')&&(p==='/deposit-addresses'||productPath));
+  // Transactions must stay on this server so second-admin ownership
+  // checks are applied to lists and approve/reject actions. Only proof-image
+  // reads are proxied to the platform backend.
+  const isCore=(req.method==='GET'&&txPath)
+    ||((req.method==='GET'||req.method==='POST')&&productPath)
+    ||((req.method==='GET'||req.method==='PUT'||req.method==='PATCH'||req.method==='DELETE')&&p==='/deposit-addresses');
   const ruleMatch=p.match(/^\/users\/([^/]+)\/insufficient-balance$/);
   if(ruleMatch && (req.method==='GET' || req.method==='POST')){
     try{
