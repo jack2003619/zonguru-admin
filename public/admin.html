@@ -170,7 +170,7 @@ async function saveBalance(){if(!selected)return;const delta=Number($('balanceDe
 async function saveFinancial(){if(!selected)return;try{await api('/api/admin/users/'+uid(selected)+'/financial-settings',{method:'POST',body:JSON.stringify({frozenAmount:Number($('frozen').value||0),creditScore:Number($('credit').value||0)})});msg('userMsg','Frozen Amount and Credit Score saved.',true);await loadUsers()}catch(e){msg('userMsg',e.message)}}
 async function saveUserCurrency(){if(!selected)return;try{await api('/api/admin/users/'+uid(selected)+'/currency',{method:'POST',body:JSON.stringify({currency:$('userCurrency').value})});msg('userMsg','User currency updated.',true);await loadUsers()}catch(e){msg('userMsg',e.message)}}
 async function saveVip(){if(!selected)return;try{await api('/api/admin/users/'+uid(selected)+'/vip',{method:'POST',body:JSON.stringify({vipLevel:Number($('vip').value)})});msg('userMsg','VIP updated and task progress reset to 0.',true);await loadUsers()}catch(e){msg('userMsg',e.message)}}
-async async function resetUserPassword(){if(!selected)return;const id=uid(selected),field=$('adminNewUserPassword'),newPassword=String(field.value||'');if(newPassword.length<8){msg('passwordResetMsg','Password must be at least 8 characters.');return}if(!confirm('Change the login password for '+(selected.username||'this user')+'? The old password will stop working.'))return;try{const d=await api('/api/admin/users/'+id+'/reset-password',{method:'POST',body:JSON.stringify({newPassword})});if(!d.success||!d.passwordChanged)throw Error(d.message||'Password change was not confirmed');field.value='';msg('passwordResetMsg','Password changed and verified. The new password is now required for the user to log in.',true)}catch(e){msg('passwordResetMsg','Password reset failed: '+e.message)}}
+async function resetUserPassword(){if(!selected)return;const id=uid(selected),field=$('adminNewUserPassword'),newPassword=String(field.value||'');if(newPassword.length<8){msg('passwordResetMsg','Password must be at least 8 characters.');return}if(!confirm('Change the login password for '+(selected.username||'this user')+'? The old password will stop working.'))return;try{const d=await api('/api/admin/users/'+id+'/reset-password',{method:'POST',body:JSON.stringify({newPassword})});if(!d.success||!d.passwordChanged)throw Error(d.message||'Password change was not confirmed');field.value='';msg('passwordResetMsg','Password changed and verified. The new password is now required for the user to log in.',true)}catch(e){msg('passwordResetMsg','Password reset failed: '+e.message)}}
 
 function renderAdminBankAccounts(accounts){
  const root=$('adminUserBankAccounts');if(!root)return;
@@ -185,7 +185,7 @@ function collectAdminBankAccounts(){
 }
 function addAdminBankAccount(){const list=collectAdminBankAccounts();list.push({bankName:'',accountName:'',accountNumber:'',additionalDetails:''});renderAdminBankAccounts(list);}
 function removeAdminBankAccount(index){const list=collectAdminBankAccounts();list.splice(index,1);renderAdminBankAccounts(list);}
-async async function resetUserWithdrawalPassword(){
+async function resetUserWithdrawalPassword(){
  if(!selected)return;const field=$('adminNewUserWithdrawalPassword'),newPassword=String(field.value||'');
  if(newPassword.length<6){msg('withdrawalPasswordResetMsg','Withdrawal password must be at least 6 characters.');return;}
  if(!confirm('Set a new withdrawal password for '+(selected.username||'this user')+'? The previous withdrawal password will stop working.'))return;
