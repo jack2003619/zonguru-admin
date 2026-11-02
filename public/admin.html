@@ -15,7 +15,7 @@ main{padding:12px;max-width:1200px;margin:auto}.tabs{display:flex;gap:8px;overfl
 <div id="login" class="card login"><h2>Zonguru Admin</h2><div class="field"><label>Username</label><input id="lu" value="admin"></div><div class="field"><label>Password</label><input id="lp" type="password"></div><button class="primary" onclick="login()">Login</button><div id="loginMsg"></div></div>
 <div id="app" class="hidden">
 <header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><button class="secondary" onclick="logout()">Logout</button></header>
-<nav class="tabs"><button data-t="users" class="active" onclick="tab('users')">Users</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button></nav>
+<nav class="tabs"><button data-t="users" class="active" onclick="tab('users')">Users</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button></nav>
 <main>
 <section id="users" class="card"><h3>Users</h3><section id="adminCurrencyConverter" class="card" style="margin:12px 0;border:1px solid #d7e3ff;background:var(--card,#fff)"><h3 style="margin:0 0 6px">Currency Converter</h3><div class="small muted" style="margin-bottom:12px">Preview only — uses the platform's existing currency rates. This does not change any user balance.</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px"><div class="field"><label for="adminConvAmountA">Amount</label><div style="display:flex;gap:8px"><input id="adminConvAmountA" type="number" min="0" step="any" value="100" style="min-width:0;flex:1"><select id="adminConvCurrencyA" aria-label="First currency" style="min-width:100px;max-width:150px"></select></div></div><div class="field"><label for="adminConvAmountB">Converted amount</label><div style="display:flex;gap:8px"><input id="adminConvAmountB" type="text" readonly style="min-width:0;flex:1;background:#f7f9fc"><select id="adminConvCurrencyB" aria-label="Second currency" style="min-width:100px;max-width:150px"></select></div></div></div><div id="adminConvSummary" class="notice" style="margin-top:10px">100 USDT = 1,850.00 MXN</div></section><div class="grid" style="margin:12px 0"><div class="stat"><div class="small">Total User Balance (USDT)</div><strong id="totalUserBalance" style="font-size:22px">0.00</strong><div class="small">Current balances across visible users</div></div><div class="stat"><div class="small">Total Deposit Income (USDT)</div><strong id="totalDepositIncome" style="font-size:22px">0.00</strong><div class="small">Approved deposits only</div></div><div class="stat"><div class="small">Total Withdrawal (USDT)</div><strong id="totalWithdrawal" style="font-size:22px">0.00</strong><div class="small">Approved withdrawals only</div></div></div><div class="actions"><button class="secondary" onclick="loadFinancialSummary()">Refresh Totals</button></div><div id="usersMsg"></div><input id="userSearch" placeholder="Search users by username, email, phone or ID" oninput="renderUsers()" style="width:100%;padding:11px;border:1px solid #ddd6ee;border-radius:9px;margin:8px 0 12px"><div class="tablewrap"><table><thead><tr><th>User</th><th>Email / Phone</th><th>Balance</th><th>Frozen</th><th>Credit</th><th>VIP</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div></section><section id="admins" class="card hidden">
 <h3>Second Admin Management</h3>
@@ -34,6 +34,21 @@ main{padding:12px;max-width:1200px;margin:auto}.tabs{display:flex;gap:8px;overfl
   <div class="field"><label>Action</label><div class="actions"><button class="primary" onclick="createInviteCode()">Generate Invite Code</button></div></div>
 </div>
 <div class="tablewrap"><table><thead><tr><th>Code</th><th>Second Admin</th><th>Status</th><th>Used</th><th>Created</th><th>Action</th></tr></thead><tbody id="invitesBody"></tbody></table></div>
+</section>
+<section id="announcements" class="card hidden">
+<h3>Announcements / User Notifications</h3>
+<div class="notice">Send a popup announcement that appears after users log in. Users can close it with ×. Choose all users or selected users.</div>
+<div class="grid">
+ <div class="field"><label>Title (optional)</label><input id="announcementTitleInput" maxlength="120" placeholder="Announcement title"></div>
+ <div class="field"><label>Recipients</label><select id="announcementAudience" onchange="toggleAnnouncementRecipients()"><option value="all">All Users</option><option value="selected">Selected Users</option></select></div>
+</div>
+<div id="announcementRecipientsWrap" class="field hidden" style="margin-top:10px"><label>Select one or more users</label><select id="announcementRecipients" multiple size="7" style="width:100%;border:1px solid #ddd6ee;border-radius:9px;padding:8px;min-height:150px"></select><div class="small">Select one or more user accounts.</div></div>
+<div class="field" style="margin-top:10px"><label>Message</label><textarea id="announcementTextInput" rows="4" maxlength="5000" placeholder="Write your announcement here..." style="width:100%;border:1px solid #ddd6ee;border-radius:9px;padding:10px"></textarea></div>
+<div class="field" style="margin-top:10px"><label>Image (PNG, JPG, WEBP or GIF; maximum 1 MB)</label><input id="announcementImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewAnnouncementImage()"><img id="announcementImagePreview" alt="Announcement preview" style="display:none;max-width:100%;max-height:220px;object-fit:contain;margin-top:8px;border-radius:10px"></div>
+<div class="actions"><button class="primary" onclick="createAnnouncement()">Send Announcement</button><button class="secondary" onclick="clearAnnouncementForm()">Clear</button><button class="secondary" onclick="loadAnnouncements()">Refresh List</button></div>
+<div id="announcementMsg"></div>
+<h4 style="margin-top:18px">Sent Announcements</h4>
+<div class="tablewrap"><table><thead><tr><th>Created</th><th>Announcement</th><th>Audience</th><th>Dismissed</th><th>Action</th></tr></thead><tbody id="announcementsBody"></tbody></table></div>
 </section>
 <section id="transactions" class="card hidden"><h3>Transactions</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><input id="txSearch" type="search" placeholder="Search by username, email, phone, account ID, type or status" oninput="loadTx()" style="flex:1;min-width:220px"><button type="button" onclick="document.getElementById('txSearch').value='';loadTx()">Clear Search</button></div><div id="txMsg"></div><div class="tablewrap"><table><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th>Details</th><th>Action</th></tr></thead><tbody id="txBody"></tbody></table></div></section>
 <section id="products" class="card hidden"><h3>Products & Insufficient-Balance Rules</h3><div class="notice">Safe mode: an insufficient-balance rule blocks the order and shows the shortfall. It does not create a negative balance.</div><div class="actions"><button class="primary" onclick="editProduct()">Add Product</button><button class="secondary" onclick="loadProducts()">Refresh</button></div><div id="productMsg"></div><div class="tablewrap"><table><thead><tr><th>Product</th><th>Price</th><th>Profit Amount</th><th>VIP</th><th>Insufficient Rule</th><th>Action</th></tr></thead><tbody id="productsBody"></tbody></table></div></section>
@@ -274,6 +289,49 @@ async function createInviteCode(){
 async function revokeInvite(id){
   if(!confirm('Revoke this invite code?'))return;
   try{await api('/api/admin/invite-codes/'+id+'/revoke',{method:'POST'});await loadAdminManagement()}catch(e){msg('adminMsg',e.message)}
+}
+
+function toggleAnnouncementRecipients(){
+ const show=$('announcementAudience').value==='selected';
+ $('announcementRecipientsWrap').classList.toggle('hidden',!show);
+ if(show)populateAnnouncementRecipients();
+}
+function populateAnnouncementRecipients(){
+ const select=$('announcementRecipients');if(!select)return;
+ const chosen=new Set(Array.from(select.selectedOptions||[]).map(o=>o.value));
+ select.innerHTML=(users||[]).filter(u=>String(u.role||'user')==='user').map(u=>'<option value="'+esc(uid(u))+'" '+(chosen.has(uid(u))?'selected':'')+'>'+esc(u.username||'User')+' · '+esc(u.email||u.phone||uid(u))+'</option>').join('');
+}
+function previewAnnouncementImage(){
+ const file=$('announcementImageInput').files?.[0],img=$('announcementImagePreview');
+ if(!file){img.removeAttribute('src');img.style.display='none';return}
+ if(!/^image\/(png|jpeg|webp|gif)$/i.test(file.type)||file.size>1024*1024){$('announcementImageInput').value='';img.removeAttribute('src');img.style.display='none';return msg('announcementMsg','Choose a PNG, JPG, WEBP or GIF image smaller than 1 MB.')}
+ const reader=new FileReader();reader.onload=()=>{img.src=String(reader.result||'');img.style.display='block'};reader.onerror=()=>msg('announcementMsg','Unable to read this image.');reader.readAsDataURL(file);
+}
+function clearAnnouncementForm(){
+ $('announcementTitleInput').value='';$('announcementTextInput').value='';$('announcementImageInput').value='';$('announcementImagePreview').removeAttribute('src');$('announcementImagePreview').style.display='none';$('announcementAudience').value='all';$('announcementRecipientsWrap').classList.add('hidden');Array.from($('announcementRecipients').options).forEach(o=>o.selected=false);$('announcementMsg').innerHTML='';
+}
+async function createAnnouncement(){
+ const title=$('announcementTitleInput').value.trim(),textValue=$('announcementTextInput').value.trim(),audience=$('announcementAudience').value,file=$('announcementImageInput').files?.[0];
+ if(!title&&!textValue&&!file)return msg('announcementMsg','Add a title, message or image.');
+ let image='';
+ if(file){if(file.size>1024*1024)return msg('announcementMsg','Image must be smaller than 1 MB.');image=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(new Error('Unable to read image'));reader.readAsDataURL(file)})}
+ const recipientIds=audience==='selected'?Array.from($('announcementRecipients').selectedOptions).map(o=>o.value):[];
+ if(audience==='selected'&&!recipientIds.length)return msg('announcementMsg','Select at least one user.');
+ if(!confirm(audience==='all'?'Send this announcement to ALL users?':'Send this announcement to '+recipientIds.length+' selected user(s)?'))return;
+ try{await api('/api/admin/announcements',{method:'POST',body:JSON.stringify({title,text:textValue,image,audience,recipientIds})});msg('announcementMsg','Announcement sent successfully.',true);clearAnnouncementForm();await loadAnnouncements()}
+ catch(e){msg('announcementMsg','Unable to send announcement: '+e.message)}
+}
+async function loadAnnouncements(){
+ try{
+  if(!users.length){const ud=await api('/api/admin/users');users=ud.users||[]}
+  populateAnnouncementRecipients();
+  const d=await api('/api/admin/announcements'),rows=d.announcements||[];
+  $('announcementsBody').innerHTML=rows.map(x=>'<tr><td>'+esc(x.createdAt?new Date(x.createdAt).toLocaleString():'-')+'</td><td><b>'+esc(x.title||'Announcement')+'</b><br>'+esc(x.text||'')+(x.image?'<br><img src="'+esc(x.image)+'" alt="Announcement image" style="max-width:100px;max-height:70px;object-fit:contain;margin-top:5px">':'')+'</td><td>'+(x.audience==='all'?'All Users':'Selected ('+(x.recipientIds||[]).length+')')+'</td><td>'+esc((x.dismissedBy||[]).length)+'</td><td><button class="danger" onclick="deleteAnnouncement(\''+esc(x._id)+'\')">Delete</button></td></tr>').join('')||'<tr><td colspan="5">No announcements yet</td></tr>';
+ }catch(e){msg('announcementMsg','Unable to load announcements: '+e.message)}
+}
+async function deleteAnnouncement(id){
+ if(!confirm('Delete this announcement? It will no longer appear for users.'))return;
+ try{await api('/api/admin/announcements/'+encodeURIComponent(id),{method:'DELETE'});await loadAnnouncements();msg('announcementMsg','Announcement deleted.',true)}catch(e){msg('announcementMsg',e.message)}
 }
 try{initAdminCurrencyConverter()}catch(e){console.error('Currency converter init failed',e)}
 setInterval(()=>{try{pollTransactionNotice()}catch(e){console.error('Transaction notice polling failed',e)}},20000);
