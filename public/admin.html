@@ -48,7 +48,7 @@ main{padding:12px;max-width:1200px;margin:auto}.tabs{display:flex;gap:8px;overfl
 <div class="actions"><button class="primary" onclick="createAnnouncement()">Send Announcement</button><button class="secondary" onclick="clearAnnouncementForm()">Clear</button><button class="secondary" onclick="loadAnnouncements()">Refresh List</button></div>
 <div id="announcementMsg"></div>
 <h4 style="margin-top:18px">Sent Announcements</h4>
-<div class="tablewrap"><table><thead><tr><th>Created</th><th>Announcement</th><th>Audience</th><th>Dismissed</th><th>Action</th></tr></thead><tbody id="announcementsBody"></tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>Created</th><th>Announcement</th><th>Audience</th><th>Status</th><th>Dismissed</th><th>Action</th></tr></thead><tbody id="announcementsBody"></tbody></table></div>
 </section>
 <section id="transactions" class="card hidden"><h3>Transactions</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><input id="txSearch" type="search" placeholder="Search by username, email, phone, account ID, type or status" oninput="loadTx()" style="flex:1;min-width:220px"><button type="button" onclick="document.getElementById('txSearch').value='';loadTx()">Clear Search</button></div><div id="txMsg"></div><div class="tablewrap"><table><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th>Details</th><th>Action</th></tr></thead><tbody id="txBody"></tbody></table></div></section>
 <section id="products" class="card hidden"><h3>Products & Insufficient-Balance Rules</h3><div class="notice">Safe mode: an insufficient-balance rule blocks the order and shows the shortfall. It does not create a negative balance.</div><div class="actions"><button class="primary" onclick="editProduct()">Add Product</button><button class="secondary" onclick="loadProducts()">Refresh</button></div><div id="productMsg"></div><div class="tablewrap"><table><thead><tr><th>Product</th><th>Price</th><th>Profit Amount</th><th>VIP</th><th>Insufficient Rule</th><th>Action</th></tr></thead><tbody id="productsBody"></tbody></table></div></section>
@@ -326,8 +326,13 @@ async function loadAnnouncements(){
   if(!users.length){const ud=await api('/api/admin/users');users=ud.users||[]}
   populateAnnouncementRecipients();
   const d=await api('/api/admin/announcements'),rows=d.announcements||[];
-  $('announcementsBody').innerHTML=rows.map(x=>'<tr><td>'+esc(x.createdAt?new Date(x.createdAt).toLocaleString():'-')+'</td><td><b>'+esc(x.title||'Announcement')+'</b><br>'+esc(x.text||'')+(x.image?'<br><img src="'+esc(x.image)+'" alt="Announcement image" style="max-width:100px;max-height:70px;object-fit:contain;margin-top:5px">':'')+'</td><td>'+(x.audience==='all'?'All Users':'Selected ('+(x.recipientIds||[]).length+')')+'</td><td>'+esc((x.dismissedBy||[]).length)+'</td><td><button class="danger" onclick="deleteAnnouncement(\''+esc(x._id)+'\')">Delete</button></td></tr>').join('')||'<tr><td colspan="5">No announcements yet</td></tr>';
+  $('announcementsBody').innerHTML=rows.map(x=>'<tr><td>'+esc(x.createdAt?new Date(x.createdAt).toLocaleString():'-')+'</td><td><b>'+esc(x.title||'Announcement')+'</b><br>'+esc(x.text||'')+(x.image?'<br><img src="'+esc(x.image)+'" alt="Announcement image" style="max-width:100px;max-height:70px;object-fit:contain;margin-top:5px">':'')+'</td><td>'+(x.audience==='all'?'All Users':'Selected ('+(x.recipientIds||[]).length+')')+'</td><td>'+(x.active===false?'<span style="color:#d33;font-weight:700">Disabled</span>':'<span style="color:#16834a;font-weight:700">Active</span>')+'</td><td>'+esc((x.dismissedBy||[]).length)+'</td><td><button class="secondary" onclick="setAnnouncementActive(\''+esc(x._id)+'\','+(x.active===false?'true':'false')+')">'+(x.active===false?'Enable':'Disable')+'</button> <button class="danger" onclick="deleteAnnouncement(\''+esc(x._id)+'\')">Delete</button></td></tr>').join('')||'<tr><td colspan="6">No announcements yet</td></tr>';
  }catch(e){msg('announcementMsg','Unable to load announcements: '+e.message)}
+}
+async function setAnnouncementActive(id,active){
+ const action=active?'enable':'disable';
+ if(!confirm((active?'Enable':'Disable')+' this announcement?'))return;
+ try{await api('/api/admin/announcements/'+encodeURIComponent(id)+'/status',{method:'PATCH',body:JSON.stringify({active})});await loadAnnouncements();msg('announcementMsg','Announcement '+(active?'enabled':'disabled')+'.',true)}catch(e){msg('announcementMsg','Unable to '+action+' announcement: '+e.message)}
 }
 async function deleteAnnouncement(id){
  if(!confirm('Delete this announcement? It will no longer appear for users.'))return;
