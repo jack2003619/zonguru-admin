@@ -310,6 +310,28 @@ app.post('/api/admin/announcements', auth, async (req, res) => {
   }
 });
 
+app.patch('/api/admin/announcements/:id/status', auth, async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid announcement id' });
+    if (typeof req.body?.active !== 'boolean') return res.status(400).json({ success: false, message: 'Active status must be true or false' });
+    const announcement = await Announcement.findById(req.params.id);
+    if (!announcement) return res.status(404).json({ success: false, message: 'Announcement not found' });
+    if (!isSuperAdmin(req)) {
+      const ids = await getScopedUserIds(req) || [];
+      const allowed = announcement.createdBy === req.admin.username ||
+        (announcement.audience === 'selected' && announcement.recipientIds.some(id => ids.some(own => String(own) === String(id))));
+      if (!allowed) return res.status(403).json({ success: false, message: 'You cannot change this announcement' });
+    }
+    announcement.active = req.body.active;
+    await announcement.save();
+    await audit(req.admin, req.body.active ? 'ANNOUNCEMENT_ENABLE' : 'ANNOUNCEMENT_DISABLE', (req.body.active ? 'Enabled' : 'Disabled') + ' announcement ' + String(announcement._id));
+    res.json({ success: true, announcement });
+  } catch (error) {
+    console.error('Update announcement status:', error.stack || error.message);
+    res.status(500).json({ success: false, message: 'Failed to update announcement status' });
+  }
+});
+
 app.delete('/api/admin/announcements/:id', auth, async (req, res) => {
   try {
     if (!mongoose.isValidObjectId(req.params.id))
