@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const app = express();
 
 app.use(cors({ origin: true }));
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '2mb' }));
 app.use(express.static('public', { setHeaders: (res) => { res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); res.setHeader('Pragma', 'no-cache'); res.setHeader('Expires', '0'); } }));
 
 const PORT = process.env.PORT || 3000;
@@ -224,6 +224,112 @@ async function audit(admin, action, details, extra = {}) {
     console.error('Audit error:', error.message);
   }
 }
+
+
+const announcementSchema = new mongoose.Schema({
+  title: { type: String, default: '' },
+  text: { type: String, default: '' },
+  image: { type: String, default: '' },
+  audience: { type: String, enum: ['all', 'selected'], default: 'all' },
+  recipientIds: [{ type: mongoose.Schema.Types.ObjectId }],
+  dismissedBy: [{ type: mongoose.Schema.Types.ObjectId }],
+  active: { type: Boolean, default: true },
+  createdBy: { type: String, default: '' },
+  createdAt: { type: Date, default: Date.now }
+}, { collection: 'announcements', strict: false });
+const Announcement = mongoose.model('AdminAnnouncement', announcementSchema);
+
+app.get('/api/admin/announcements', auth, async (req, res) => {
+  try {
+    const filter = {};
+    if (!isSuperAdmin(req)) {
+      const ids = await getScopedUserIds(req);
+      filter.$or = [
+        { audience: 'all', createdBy: req.admin.username },
+        { audience: 'selected', recipientIds: { $in: ids || [] } }
+      ];
+    }
+    const announcements = await Announcement.find(filter).sort({ createdAt: -1 }).limit(300).lean();
+    res.json({ success: true, announcements });
+  } catch (error) {
+    console.error('List announcements:', error.stack || error.message);
+    res.status(500).json({ success: false, message: 'Failed to load announcements' });
+  }
+});
+
+app.post('/api/admin/announcements', auth, async (req, res) => {
+  try {
+    const title = String(req.body?.title || '').trim();
+    const text = String(req.body?.text || '').trim();
+    const image = String(req.body?.image || '').trim();
+    const requestedAudience = String(req.body?.audience || 'all').toLowerCase();
+    const suppliedIds = Array.isArray(req.body?.recipientIds) ? req.body.recipientIds.map(String) : [];
+    if (!title && !text && !image)
+      return res.status(400).json({ success: false, message: 'Add announcement text or an image' });
+    if (title.length > 120 || text.length > 5000)
+      return res.status(400).json({ success: false, message: 'Announcement text is too long' });
+    if (image && (!/^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(image) || image.length > 1400000))
+      return res.status(400).json({ success: false, message: 'Image must be PNG, JPG, WEBP or GIF and no larger than 1 MB' });
+    if (!['all', 'selected'].includes(requestedAudience))
+      return res.status(400).json({ success: false, message: 'Invalid announcement audience' });
+
+    let audience = requestedAudience;
+    let recipientIds = [];
+    if (isSuperAdmin(req)) {
+      if (audience === 'selected') {
+        if (!suppliedIds.length) return res.status(400).json({ success: false, message: 'Select at least one user' });
+        const validUsers = await User.find({ role: 'user', _id: { $in: suppliedIds.filter(mongoose.isValidObjectId) } }).select('_id').lean();
+        recipientIds = validUsers.map(user => user._id);
+        if (recipientIds.length !== new Set(suppliedIds).size)
+          return res.status(400).json({ success: false, message: 'One or more selected users are invalid' });
+      }
+    } else {
+      const scopedIds = await getScopedUserIds(req) || [];
+      const scopeSet = new Set(scopedIds.map(id => String(id)));
+      if (audience === 'all') {
+        audience = 'selected';
+        recipientIds = scopedIds;
+        if (!recipientIds.length) return res.status(400).json({ success: false, message: 'No users are assigned to this admin' });
+      } else {
+        if (!suppliedIds.length || suppliedIds.some(id => !mongoose.isValidObjectId(id) || !scopeSet.has(id)))
+          return res.status(403).json({ success: false, message: 'Selected users must belong to your invite-code user list' });
+        recipientIds = suppliedIds;
+      }
+    }
+
+    const announcement = await Announcement.create({
+      title, text, image, audience, recipientIds,
+      active: true, createdBy: String(req.admin.username || req.admin.id)
+    });
+    await audit(req.admin, 'ANNOUNCEMENT_CREATE',
+      'Created announcement for ' + (audience === 'all' ? 'all users' : recipientIds.length + ' selected users'));
+    res.status(201).json({ success: true, announcement });
+  } catch (error) {
+    console.error('Create announcement:', error.stack || error.message);
+    res.status(500).json({ success: false, message: 'Failed to send announcement' });
+  }
+});
+
+app.delete('/api/admin/announcements/:id', auth, async (req, res) => {
+  try {
+    if (!mongoose.isValidObjectId(req.params.id))
+      return res.status(400).json({ success: false, message: 'Invalid announcement id' });
+    const announcement = await Announcement.findById(req.params.id);
+    if (!announcement) return res.status(404).json({ success: false, message: 'Announcement not found' });
+    if (!isSuperAdmin(req)) {
+      const ids = await getScopedUserIds(req) || [];
+      const allowed = announcement.createdBy === req.admin.username ||
+        (announcement.audience === 'selected' && announcement.recipientIds.some(id => ids.some(own => String(own) === String(id))));
+      if (!allowed) return res.status(403).json({ success: false, message: 'You cannot delete this announcement' });
+    }
+    await Announcement.deleteOne({ _id: announcement._id });
+    await audit(req.admin, 'ANNOUNCEMENT_DELETE', 'Deleted announcement ' + String(announcement._id));
+    res.json({ success: true, message: 'Announcement deleted' });
+  } catch (error) {
+    console.error('Delete announcement:', error.stack || error.message);
+    res.status(500).json({ success: false, message: 'Failed to delete announcement' });
+  }
+});
 
 app.get('/health', (req, res) => {
   res.status(200).json({ success: true, status: 'ok' });
