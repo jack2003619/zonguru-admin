@@ -633,6 +633,22 @@ app.use('/api/admin', auth, async (req,res,next)=>{
       return res.status(result.status).json(data);
     }catch(e){console.error('Lucky Spin ticket proxy:',e.message);return res.status(502).json({success:false,message:'Main backend unavailable; tickets were not changed'});}
   }
+  const wheelSettingMatch=p.match(/^\/users\/([^/]+)\/lucky-spin\/setting$/);
+  if(wheelSettingMatch && req.method==='POST'){
+    try{
+      const headers={'Content-Type':'application/json'};if(req.headers.authorization)headers.Authorization=req.headers.authorization;
+      const listResponse=await fetch(BACKEND_URL+'/api/admin/users',{method:'GET',headers});
+      const listText=await listResponse.text();let listData={};try{listData=JSON.parse(listText)}catch{}
+      if(!listResponse.ok||listData.success!==true||!Array.isArray(listData.users))return res.status(listResponse.status||502).json({success:false,message:listData.message||'Unable to verify user in platform backend'});
+      const target=listData.users.find(u=>String(u._id||u.id)===String(wheelSettingMatch[1])&&u.role==='user');
+      if(!target)return res.status(404).json({success:false,message:'User not found in platform backend'});
+      if(!isSuperAdmin(req)&&String(target.ownerAdminId||'')!==String(req.admin.id))return res.status(403).json({success:false,message:'This user is outside your invite-code scope'});
+      const result=await fetch(BACKEND_URL+'/api/admin/users/'+encodeURIComponent(wheelSettingMatch[1])+'/lucky-spin/setting',{method:'POST',headers,body:JSON.stringify(req.body||{})});
+      const raw=await result.text();let data;try{data=JSON.parse(raw)}catch{data={success:false,message:'Backend returned non-JSON response'}};
+      if(result.ok&&data.success===true)await audit(req.admin,'LUCKY_SPIN_SETTING_UPDATE','Updated Lucky Spin wheel setting for '+target.username,{targetUserId:wheelSettingMatch[1],mode:data.mode});
+      return res.status(result.status).json(data);
+    }catch(e){console.error('Lucky Spin setting proxy:',e.message);return res.status(502).json({success:false,message:'Main backend unavailable; wheel setting was not changed'});}
+  }
   const passwordResetMatch=p.match(/^\/users\/([^/]+)\/reset-password$/);
   if(passwordResetMatch && req.method==='POST'){
     try{
