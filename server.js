@@ -591,7 +591,7 @@ async function proxyBackend(req,res,targetPath){
 }
 app.use('/api/admin', auth, async (req,res,next)=>{
   const p=req.path;
-  const txPath=p.startsWith('/transactions/');
+  const txPath=p==='/transactions' || p.startsWith('/transactions/');
   const productPath=p.startsWith('/products');
   // User and Customer Service routes are handled locally below against the
   // shared admin MongoDB. Do not proxy them to the platform backend, because
@@ -599,7 +599,7 @@ app.use('/api/admin', auth, async (req,res,next)=>{
   // Transactions must stay on this server so second-admin ownership
   // checks are applied to lists and approve/reject actions. Only proof-image
   // reads are proxied to the platform backend.
-  const isCore=(req.method==='GET'&&txPath)
+  const isCore=(txPath&&(req.method==='GET'||req.method==='POST'))
     ||((req.method==='GET'||req.method==='POST')&&productPath)
     ||((req.method==='GET'||req.method==='PUT'||req.method==='PATCH'||req.method==='DELETE')&&p==='/deposit-addresses');
   const ruleMatch=p.match(/^\/users\/([^/]+)\/insufficient-balance$/);
@@ -728,19 +728,53 @@ app.use('/api/admin', auth, async (req,res,next)=>{
     try{
       const headers={'Content-Type':'application/json'};
       if(req.headers.authorization) headers.Authorization=req.headers.authorization;
-      const r=await fetch(BACKEND_URL+'/api/admin/transactions',{method:'GET',headers});
-      const text=await r.text(); let remote={}; try{remote=JSON.parse(text)}catch{}
-      const local=await Transaction.find().sort({createdAt:-1}).limit(500).lean();
-      const merged=[...(Array.isArray(remote.transactions)?remote.transactions:[]),...local];
-      const seen=new Set();
+      const [r,userResponse]=await Promise.all([
+        fetch(BACKEND_URL+'/api/admin/transactions',{method:'GET',headers}),
+        fetch(BACKEND_URL+'/api/admin/users',{method:'GET',headers})
+      ]);
+      const [txText,userText]=await Promise.all([r.text(),userResponse.text()]);
+      let remote={},userData={};try{remote=JSON.parse(txText)}catch{}try{userData=JSON.parse(userText)}catch{}
+      if(!r.ok||remote.success!==true||!Array.isArray(remote.transactions))
+        return res.status(r.status||502).json({success:false,message:remote.message||'Unable to load transactions from platform backend'});
+      if(!userResponse.ok||userData.success!==true||!Array.isArray(userData.users))
+        return res.status(userResponse.status||502).json({success:false,message:userData.message||'Unable to verify transaction ownership'});
+      const visibleUsers=userData.users.filter(u=>u.role==='user'&&(isSuperAdmin(req)||String(u.ownerAdminId||'')===String(req.admin.id)));
+      const visibleIds=new Set(visibleUsers.map(u=>String(u._id||u.id)));
+      const remoteRows=remote.transactions.filter(t=>isSuperAdmin(req)||visibleIds.has(String(t.userId?._id||t.userId||'')));
+      const local=await Transaction.find(isSuperAdmin(req)?{}:{userId:{$in:[...visibleIds]}}).sort({createdAt:-1}).limit(500).lean();
+      const merged=[...remoteRows,...local],seen=new Set();
       const transactions=merged.filter(t=>{
-        const key=String(t._id||'')+'|'+String(t.userId||'')+'|'+String(t.createdAt||'')+'|'+String(t.type||'')+'|'+String(t.amount||'');
-        if(seen.has(key))return false; seen.add(key); return true;
+        const key=String(t._id||'')+'|'+String(t.userId?._id||t.userId||'')+'|'+String(t.createdAt||'')+'|'+String(t.type||'')+'|'+String(t.amount||'');
+        if(seen.has(key))return false;seen.add(key);return true;
       }).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,500);
-      return res.status(r.ok?200:r.status).json({success:r.ok||transactions.length>0,transactions});
-    }catch(e){
-      const transactions=await Transaction.find().sort({createdAt:-1}).limit(500);
       return res.json({success:true,transactions});
+    }catch(e){
+      console.error('Load transactions from platform backend:',e.message);
+      return res.status(502).json({success:false,message:'Unable to load current platform transactions'});
+    }
+  }
+  if(txPath&&req.method==='POST'&&/^\\/transactions\\/[^/]+\\/(approve|reject)$/.test(p)){
+    try{
+      const headers={'Content-Type':'application/json'};
+      if(req.headers.authorization)headers.Authorization=req.headers.authorization;
+      const id=p.split('/')[2];
+      const [r,userResponse]=await Promise.all([
+        fetch(BACKEND_URL+'/api/admin/transactions',{method:'GET',headers}),
+        fetch(BACKEND_URL+'/api/admin/users',{method:'GET',headers})
+      ]);
+      const [txText,userText]=await Promise.all([r.text(),userResponse.text()]);
+      let remote={},userData={};try{remote=JSON.parse(txText)}catch{}try{userData=JSON.parse(userText)}catch{}
+      if(!r.ok||!Array.isArray(remote.transactions)||!userResponse.ok||!Array.isArray(userData.users))
+        return res.status(502).json({success:false,message:'Unable to verify this transaction with the platform backend'});
+      const transaction=remote.transactions.find(t=>String(t._id||t.id)===id);
+      if(!transaction)return res.status(404).json({success:false,message:'Transaction not found in platform backend'});
+      const user=userData.users.find(u=>String(u._id||u.id)===String(transaction.userId?._id||transaction.userId||''));
+      if(!user||user.role!=='user'||(!isSuperAdmin(req)&&String(user.ownerAdminId||'')!==String(req.admin.id)))
+        return res.status(403).json({success:false,message:'This transaction is outside your admin scope'});
+      return proxyBackend(req,res,'/api/admin'+p);
+    }catch(e){
+      console.error('Review platform transaction:',e.message);
+      return res.status(502).json({success:false,message:'Unable to review transaction with the platform backend'});
     }
   }
   if(req.method==='GET' && p.startsWith('/chat/')){
