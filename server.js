@@ -753,7 +753,7 @@ app.use('/api/admin', auth, async (req,res,next)=>{
       return res.status(502).json({success:false,message:'Unable to load current platform transactions'});
     }
   }
-  if(txPath&&req.method==='POST'&&/^\\/transactions\\/[^/]+\\/(approve|reject)$/.test(p)){
+if(txPath&&req.method==='POST'&&(p.endsWith('/approve')||p.endsWith('/reject'))){
     try{
       const headers={'Content-Type':'application/json'};
       if(req.headers.authorization)headers.Authorization=req.headers.authorization;
