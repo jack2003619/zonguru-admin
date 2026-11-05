@@ -800,6 +800,29 @@ if(txPath&&req.method==='POST'&&(p.endsWith('/approve')||p.endsWith('/reject')))
   return proxyBackend(req,res,'/api/admin'+p);
 });
 
+
+app.get('/api/admin/bonuses',auth,async(req,res)=>{
+  return proxyBackend(req,res,'/api/admin/bonuses');
+});
+app.post('/api/admin/bonuses',auth,async(req,res)=>{
+  try{
+    const headers={'Content-Type':'application/json'};if(req.headers.authorization)headers.Authorization=req.headers.authorization;
+    const response=await fetch(BACKEND_URL+'/api/admin/users',{method:'GET',headers});
+    const raw=await response.text();let data={};try{data=JSON.parse(raw)}catch{}
+    if(!response.ok||data.success!==true||!Array.isArray(data.users))return res.status(response.status||502).json({success:false,message:data.message||'Unable to verify bonus recipients'});
+    let allowed=data.users.filter(u=>u.role==='user');
+    if(!isSuperAdmin(req))allowed=allowed.filter(u=>String(u.ownerAdminId||'')===String(req.admin.id));
+    const requested=String(req.body?.target||'all');
+    const ids=requested==='all'?allowed.map(u=>String(u._id||u.id)):Array.isArray(req.body?.userIds)?req.body.userIds.map(String):[];
+    const valid=ids.filter(id=>allowed.some(u=>String(u._id||u.id)===id));
+    if(!valid.length)return res.status(400).json({success:false,message:'No eligible users selected for this admin scope'});
+    const body={...(req.body||{}),target:'selected',userIds:valid};
+    const r=await fetch(BACKEND_URL+'/api/admin/bonuses',{method:'POST',headers,body:JSON.stringify(body)});
+    const rawResult=await r.text();let result={};try{result=JSON.parse(rawResult)}catch{}
+    return res.status(r.status).json(result);
+  }catch(e){console.error('Bonus admin proxy:',e.message);return res.status(502).json({success:false,message:'Main backend unavailable; bonus was not sent'});}
+});
+
 app.get('/api/admin/users', auth, async (req, res) => {
   try {
     // User accounts and their balances are authoritative in the platform backend.
