@@ -61,7 +61,7 @@ main{padding:12px;max-width:1200px;margin:auto}.tabs{display:flex;gap:8px;overfl
 </div>
 <div id="bonusRecipientsWrap" class="field hidden"><label>Select users</label><select id="bonusRecipients" multiple size="7" style="width:100%;border:1px solid #ddd6ee;border-radius:9px;padding:8px;min-height:140px"></select></div>
 <div class="field"><label>Message (optional)</label><textarea id="bonusMessage" rows="3" maxlength="2000" placeholder="A bonus is available for you to claim."></textarea></div>
-<div class="actions"><button class="primary" onclick="sendBonus()">Send Bonus</button><button class="secondary" onclick="loadBonuses()">Refresh Bonus History</button></div>
+<div class="actions"><button class="primary" onclick="sendBonus()">Send Cash Bonus</button><button class="secondary" onclick="sendAdminNotification()">Send Text Notification</button><button class="secondary" onclick="loadBonuses()">Refresh Bonus History</button></div>
 <div id="bonusMsg"></div>
 <div class="tablewrap"><table><thead><tr><th>User ID</th><th>Title</th><th>Amount (USDT)</th><th>Expiry</th><th>Status</th><th>Claimed</th></tr></thead><tbody id="bonusesBody"></tbody></table></div>
 </section>
@@ -171,6 +171,14 @@ function populateBonusRecipients(){
  sel.innerHTML=users.map(u=>'<option value="'+esc(uid(u))+'">'+esc(u.username||uid(u))+' · '+esc(u.phone||u.email||'')+'</option>').join('');
 }
 function toggleBonusRecipients(){$('bonusRecipientsWrap').classList.toggle('hidden',$('bonusAudience').value!=='selected')}
+async function sendAdminNotification(){
+ const target=$('bonusAudience').value,userIds=Array.from($('bonusRecipients').selectedOptions).map(o=>o.value);
+ const message=String($('bonusMessage').value||'').trim();
+ if(!message){msg('bonusMsg','Enter a notification message');return}
+ if(target==='selected'&&!userIds.length){msg('bonusMsg','Select at least one user');return}
+ try{const d=await api('/api/admin/notifications',{method:'POST',body:JSON.stringify({title:$('bonusTitle').value||'Admin message',message,target,userIds})});msg('bonusMsg','Text notification sent to '+Number(d.count||0)+' user(s).',true);$('bonusMessage').value='';}
+ catch(e){msg('bonusMsg',e.message)}
+}
 async function sendBonus(){
  const amount=Number($('bonusAmount').value),expiry=$('bonusExpiry').value,target=$('bonusAudience').value;
  const userIds=Array.from($('bonusRecipients').selectedOptions).map(o=>o.value);
