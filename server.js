@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const app = express();
 
 app.use(cors({ origin: true }));
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '14mb' }));
 app.use(express.static('public', { setHeaders: (res) => { res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate'); res.setHeader('Pragma', 'no-cache'); res.setHeader('Expires', '0'); } }));
 
 const PORT = process.env.PORT || 3000;
@@ -272,8 +272,8 @@ app.post('/api/admin/announcements', auth, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Add announcement text or an image' });
     if (title.length > 120 || text.length > 5000)
       return res.status(400).json({ success: false, message: 'Announcement text is too long' });
-    if (image && (!/^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(image) || image.length > 1400000))
-      return res.status(400).json({ success: false, message: 'Image must be PNG, JPG, WEBP or GIF and no larger than 1 MB' });
+    if (image && (!/^data:image\/(png|jpeg|jpg|webp|gif);base64,/i.test(image) || image.length > 14000000))
+      return res.status(400).json({ success: false, message: 'Image must be PNG, JPG, WEBP or GIF and no larger than 10 MB' });
     if (!['all', 'selected'].includes(requestedAudience))
       return res.status(400).json({ success: false, message: 'Invalid announcement audience' });
 
