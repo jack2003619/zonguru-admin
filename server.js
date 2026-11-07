@@ -97,6 +97,10 @@ const Product = mongoose.model('AdminProduct', productSchema);
 const Transaction = mongoose.model('AdminTransaction', txSchema);
 const Message = mongoose.model('AdminMessage', msgSchema);
 const Audit = mongoose.model('AdminAudit', auditSchema);
+const AdminActivity = mongoose.model('AdminActivity', new mongoose.Schema({
+  eventType:String,userId:mongoose.Schema.Types.ObjectId,username:String,email:String,phone:String,
+  ip:String,device:String,ownerAdminId:String,createdAt:Date
+},{collection:'admin_activity',strict:false}));
 const adminAccountSchema = new mongoose.Schema({
   username: { type: String, unique: true, index: true, trim: true },
   passwordHash: { type: String, required: true },
@@ -1056,7 +1060,27 @@ app.post('/api/admin/users/:id/task-reset', auth, async (req, res) => {
   }
 });
 
-app.get('/api/admin/users/:id/history', auth, async (req,res)=>{try{const user=await findScopedUser(req,req.params.id);if(!user)return res.status(404).json({success:false,message:'User not found'});const txs=await Transaction.find({userId:user._id}).sort({createdAt:-1}).limit(500).lean();const audits=await Audit.find({targetUserId:user._id}).sort({createdAt:-1}).limit(500).lean();const history=[...txs.map(t=>({createdAt:t.createdAt,type:t.type,amount:t.amount,status:t.status,note:t.note||''})),...audits.map(a=>({createdAt:a.createdAt,type:a.action,amount:0,status:'audit',details:a.details||''}))].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));res.json({success:true,user:{id:user._id,username:user.username,balance:Number(user.balance||0)},history})}catch(e){console.error('User history:',e.message);res.status(500).json({success:false,message:'Failed to load user history'})}});
+app.get('/api/admin/users/:id/history', auth, async (req,res)=>{
+ try{
+  const user=await findScopedUser(req,req.params.id);
+  if(!user)return res.status(404).json({success:false,message:'User not found'});
+  const [txs,audits,activity]=await Promise.all([
+   Transaction.find({userId:user._id}).sort({createdAt:-1}).limit(500).lean(),
+   Audit.find({targetUserId:user._id}).sort({createdAt:-1}).limit(500).lean(),
+   AdminActivity.find({userId:user._id,eventType:{$in:['register','login']}}).sort({createdAt:-1}).limit(500).lean()
+  ]);
+  const history=[...txs.map(t=>({createdAt:t.createdAt,type:t.type,amount:t.amount,status:t.status,note:t.note||''})),...audits.map(x=>({createdAt:x.createdAt,type:x.action,amount:0,status:'audit',details:x.details||''}))].sort((x,y)=>new Date(y.createdAt)-new Date(x.createdAt));
+  const registrations=activity.filter(x=>x.eventType==='register').sort((x,y)=>new Date(x.createdAt)-new Date(y.createdAt));
+  const logins=activity.filter(x=>x.eventType==='login');
+  const latestLogin=logins[0]||null;
+  const registration=registrations[0]||null;
+  res.set('Cache-Control','no-store');
+  res.json({success:true,user:{id:user._id,username:user.username,balance:Number(user.balance||0)},history,
+   accessInfo:{register:{date:registration?.createdAt||null,ip:registration?.ip||null,device:registration?.device||null},
+    latestLogin:latestLogin?{date:latestLogin.createdAt,ip:latestLogin.ip||null,device:latestLogin.device||null}:null,
+    loginHistory:logins.map(x=>({date:x.createdAt,ip:x.ip||null,device:x.device||null}))}});
+ }catch(e){console.error('User history:',e.message);res.status(500).json({success:false,message:'Failed to load user history'})}
+});
 
 app.get('/api/admin/transactions', auth, async (req, res) => {
   try {
