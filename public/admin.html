@@ -9,15 +9,148 @@
 header{position:sticky;top:0;z-index:5;background:#fff;padding:14px 16px;box-shadow:0 2px 12px #0001;display:flex;justify-content:space-between;align-items:center}h1,h2,h3{margin:0}.sub{font-size:12px;color:#777;margin-top:3px}
 main{padding:12px;max-width:1200px;margin:auto}.tabs{display:flex;gap:8px;overflow:auto;padding:10px 12px;background:#f4f0ff}.tabs button{background:#fff;color:#5634a8;white-space:nowrap}.tabs button.active{background:#6439c8;color:#fff}.card{background:#fff;border-radius:16px;padding:15px;margin-bottom:12px;box-shadow:0 4px 18px #0000000d}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field label{display:block;font-size:12px;color:#666;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;border:1px solid #ddd6ee;border-radius:9px;padding:10px;background:#fff}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}.primary{background:#6439c8;color:#fff}.secondary{background:#eee7ff;color:#5634a8}.danger{background:#ffe2e2;color:#9e2222}.success{background:#dff7e8;color:#18733c}.notice{padding:10px;border-radius:10px;background:#fff3d4;color:#745700;margin:8px 0}.ok{background:#e1f8ea;color:#176c3a}.bad{background:#ffe1e1;color:#9b2020}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:980px}th,td{text-align:left;padding:9px;border-bottom:1px solid #eee;font-size:12px;vertical-align:top}th{font-size:10px;color:#777}.pill{display:inline-block;padding:3px 7px;border-radius:999px;background:#eee;color:#555;font-size:10px}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:center;justify-content:center;padding:14px;z-index:20}.modal.show{display:flex}.modalbox{background:#fff;border-radius:17px;padding:17px;width:min(620px,100%);max-height:92vh;overflow:auto}.muted{font-size:12px;color:#777}.chat{display:grid;grid-template-columns:280px 1fr;gap:12px}.chatUsers{border:1px solid #e5def1;border-radius:12px;padding:8px;max-height:520px;overflow:auto}.chatUser{display:block;width:100%;text-align:left;background:#faf8ff;margin-bottom:6px}.chatUser.active{background:#e5dcff}.chatBody{height:400px;overflow:auto;background:#faf9fd;border-radius:12px;padding:12px}.msg{max-width:78%;padding:9px 11px;border-radius:12px;margin:6px 0;white-space:pre-wrap}.msg.user{background:#e8e1ff;margin-right:auto}.msg.admin{background:#dff5eb;margin-left:auto}.login{max-width:390px;margin:90px auto}.login h2{text-align:center;color:#5a35b5;margin-bottom:15px}.login .field{margin:10px 0}.login button{width:100%;margin-top:8px}.stat{background:#f4efff;border-radius:12px;padding:12px;margin:10px 0}.small{font-size:11px;color:#777}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.chat{grid-template-columns:1fr}.chatUsers{max-height:220px}.chatBody{height:330px}main{padding:8px}}
+
+/* Reference-matched layout: compact dark icon rail, white top bar, light workspace */
+:root{--ref-bg:#f5f6f8;--ref-ink:#242631;--ref-muted:#8b909b;--ref-line:#eceef2;--ref-purple:#5d43d6}
+body{margin:0;background:var(--ref-bg);color:var(--ref-ink);font-family:Inter,Arial,sans-serif}
+#app{display:grid;grid-template-columns:78px minmax(0,1fr);grid-template-rows:64px minmax(0,1fr);min-height:100vh}
+#app>header{grid-column:2;grid-row:1;height:64px;position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--ref-line);box-shadow:none;padding:0 25px;display:flex;align-items:center;justify-content:space-between}
+#app>header h1{font-size:17px;font-weight:700;color:#343640}
+#app>header .sub{display:none}
+#app>header:after{content:"Search anything...";display:block;order:-1;margin-right:auto;margin-left:28px;width:min(320px,36vw);padding:10px 14px;border-radius:8px;background:#f6f7f9;color:#a0a4ad;font-size:11px}
+#app>.tabs{grid-column:1;grid-row:1/3;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 5px;background:#101114;border:0;border-radius:0}
+.sidebar-brand{height:42px;width:100%;justify-content:center;padding:0;margin:0 0 14px;border:0;color:#fff;font-size:0}
+.brand-mark{width:32px;height:32px;border-radius:6px;font-size:19px;background:#f5f5f5;color:#17181b;box-shadow:none}
+#app>.tabs button{position:relative;width:68px;min-height:55px;padding:29px 2px 5px;text-align:center;white-space:normal;border-radius:7px;background:transparent;color:#aeb0b7;font-size:9px;line-height:1.15;font-weight:500;box-shadow:none}
+#app>.tabs button:before{position:absolute;top:7px;left:0;right:0;font-size:15px;line-height:17px;filter:grayscale(1);content:"◈"}
+#app>.tabs button:nth-of-type(2):before{content:"▦"}
+#app>.tabs button:nth-of-type(3):before{content:"◇"}
+#app>.tabs button:nth-of-type(4):before{content:"⇄"}
+#app>.tabs button:nth-of-type(5):before{content:"▤"}
+#app>.tabs button:nth-of-type(6):before{content:"▣"}
+#app>.tabs button:nth-of-type(7):before{content:"◷"}
+#app>.tabs button:nth-of-type(8):before{content:"♙"}
+#app>.tabs button:nth-of-type(9):before{content:"⚙"}
+#app>.tabs button:nth-of-type(10):before{content:"▧"}
+#app>.tabs button:nth-of-type(11):before{content:"＄"}
+#app>.tabs button:hover{background:#25262b;color:#fff}
+#app>.tabs button.active{background:#28292f;color:#fff;box-shadow:inset 2px 0 #f0a24c}
+#app>main{grid-column:2;grid-row:2;width:100%;max-width:none;min-width:0;margin:0;padding:22px 25px 40px}
+#app>main>.card{background:#fff;border:1px solid #eff0f2;border-radius:9px;padding:18px;margin-bottom:14px;box-shadow:0 2px 10px #1b22300a}
+#app>main>.card>h3{font-size:16px;font-weight:700;color:#30323a;margin-bottom:13px}
+#app>main>.card>.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.stat{background:#fff;border:1px solid #f0f1f3;border-radius:8px;padding:14px;box-shadow:none}
+.stat .small,.small{font-size:10px;color:#9297a1}
+.stat strong{display:block;margin-top:7px;font-size:22px!important;color:#242630}
+input,select,textarea,.field input,.field select,.field textarea{border:1px solid #e7e9ed;border-radius:7px;background:#fff;color:#333;padding:10px}
+button{border-radius:7px;font-size:11px;font-weight:600}
+.primary{background:#24252a;color:#fff}.secondary{background:#f0f1f3;color:#44464e}.danger{background:#fff0f0;color:#b72d36}.success{background:#e9f8ef;color:#207447}
+.tablewrap{overflow:auto;border:1px solid #eff0f2;border-radius:7px}
+table{width:100%;border-collapse:collapse;min-width:980px}
+th,td{padding:11px 10px;border-bottom:1px solid #f0f1f3;font-size:11px}
+th{background:#fafbfc;color:#898e98;font-size:10px;font-weight:650}
+#currencyRatesPage #adminCurrencyConverter{background:#fff!important;border:1px solid #eff0f2!important;border-radius:9px;padding:18px}
+#transactionsNoticeBadge{box-shadow:0 0 0 2px #101114!important}
+@media(max-width:760px){#app{grid-template-columns:68px minmax(0,1fr);grid-template-rows:58px minmax(0,1fr)}#app>header{height:58px;padding:0 12px}#app>header:after{margin-left:10px;width:min(180px,35vw)}#app>main{padding:13px 10px 25px}#app>.tabs button{width:58px;font-size:8px}#app>main>.card{padding:13px}#app>main>.card>.grid{grid-template-columns:1fr 1fr}}
+
+/* Screenshot reference: Zonguru violet/navy dashboard */
+:root{--z-bg:#f4f5ff;--z-ink:#171b3a;--z-muted:#68708d;--z-line:#edf0fa;--z-purple:#6928ed;--z-blue:#3159e8}
+body{background:linear-gradient(135deg,#f2f3ff,#f8f9ff 55%,#f0f2ff);color:var(--z-ink);font-family:Inter,'Segoe UI',Arial,sans-serif}
+#app{grid-template-columns:250px minmax(0,1fr);grid-template-rows:96px minmax(0,1fr);gap:0;min-height:100vh;padding:18px}
+#app>header{grid-column:2;grid-row:1;height:96px;border-radius:22px 22px 0 0;padding:0 26px;background:rgba(255,255,255,.96);border:1px solid #eef0fa;box-shadow:0 8px 28px #29366b0b}
+#app>header h1{font-size:17px;color:#171b3a}#app>header .sub{display:none}
+#app>header:after{content:'⌕  Search users, transactions...';width:min(480px,44vw);margin-left:0;margin-right:auto;padding:15px 18px;border-radius:28px;background:#f2f3fc;color:#7d84a2;font-size:14px;border:1px solid #eceeff}
+#app>.tabs{grid-column:1;grid-row:1/3;position:sticky;top:18px;height:calc(100vh - 36px);border-radius:18px 18px 0 0;background:linear-gradient(165deg,#10152c,#0c1022 78%,#1b1242);padding:18px 13px;align-items:stretch;gap:7px;box-shadow:0 10px 28px #1a1c3c22}
+.sidebar-brand{height:82px;justify-content:flex-start;gap:12px;padding:0 15px;margin:0 0 12px;font-size:22px;font-weight:800;color:#fff}
+.brand-mark{width:40px;height:40px;border-radius:12px;font-size:24px;background:linear-gradient(135deg,#5425ee,#db19c9);color:#fff}
+#app>.tabs button{width:100%;min-height:46px;padding:0 12px 0 54px;text-align:left;white-space:nowrap;border-radius:14px;font-size:14px;color:#b8bfd7}
+#app>.tabs button:before{top:13px;left:16px;right:auto;font-size:19px;line-height:20px;filter:none;color:#aeb8da}
+#app>.tabs button:hover{background:#252b4b;color:#fff}#app>.tabs button.active{background:linear-gradient(110deg,#7424f4,#3157df);color:#fff;box-shadow:0 7px 18px #5229d955}
+#app>main{grid-column:2;grid-row:2;width:100%;max-width:none;min-width:0;margin:0;padding:24px 8px 28px 24px;background:rgba(255,255,255,.42);border-radius:0 0 22px 0}
+#app>main>.card{background:#fff;border:1px solid #edf0fc;border-radius:20px;padding:20px;margin-bottom:18px;box-shadow:0 8px 26px #26356b0b}
+#app>main>.card>h3{font-size:21px;color:#171b3a}.stat{background:#fff;border:1px solid #e9edfa;border-radius:17px;padding:19px;box-shadow:0 5px 18px #29366b0b}
+.stat .small,.small{font-size:12px;color:#77809f}.stat strong{font-size:27px!important;color:#171b3a}
+.primary{background:#17152f;color:#fff}.secondary{background:#edf0ff;color:#3449a3}.danger{background:#ffe8ed;color:#c51e4b}.success{background:#dcf8e9;color:#087d4c}
+.tablewrap{border:1px solid #edf0fa;border-radius:14px}th{background:#f6f7fc;color:#3e4565;font-size:12px}th,td{padding:13px 12px;font-size:13px}
+@media(max-width:1000px){#app{grid-template-columns:190px minmax(0,1fr);padding:10px}}
+@media(max-width:760px){#app{grid-template-columns:68px minmax(0,1fr);grid-template-rows:62px minmax(0,1fr);padding:6px}#app>.tabs{top:6px;height:calc(100vh - 12px);padding:10px 5px}#app>.tabs button{width:58px;padding:29px 2px 5px;text-align:center;white-space:normal;font-size:8px}#app>.tabs button:before{left:0;right:0;top:6px}#app>header{height:62px;padding:0 10px}#app>header:after{width:min(175px,40vw);font-size:10px;padding:10px}#app>main{padding:12px 6px}}
+
+/* Precise screenshot-inspired Zonguru dashboard */
+:root{--z-navy:#10152c;--z-ink:#171b3a;--z-purple:#6928ed;--z-blue:#3159e8;--z-bg:#f3f4ff;--z-line:#edf0fa}
+body{background:linear-gradient(135deg,#f1f2ff 0%,#f8f9ff 58%,#eff1ff 100%);color:var(--z-ink);font-family:Inter,"Segoe UI",Arial,sans-serif}
+#app{display:grid;grid-template-columns:232px minmax(0,1fr);grid-template-rows:96px minmax(0,1fr);gap:0;min-height:100vh;padding:18px}
+#app>header{grid-column:2;grid-row:1;height:96px;position:relative;z-index:4;background:rgba(255,255,255,.96);border:1px solid #eef0fa;border-bottom:0;border-radius:22px 22px 0 0;padding:0 24px;display:flex;align-items:center;justify-content:flex-end;box-shadow:0 8px 26px #27336a0b}
+#app>header>div{display:none}
+#app>header:before{content:"⌕  Search users, transactions...";position:absolute;left:20px;top:20px;width:min(480px,48%);height:54px;display:flex;align-items:center;padding:0 20px;border-radius:28px;background:#f1f2fc;color:#858ba5;font-size:14px}
+#app>header>button{background:#f4f5ff;color:#202544;border-radius:28px;padding:12px 20px;font-size:13px;font-weight:650}
+#app>.tabs{grid-column:1;grid-row:1/3;position:sticky;top:18px;height:calc(100vh - 36px);min-height:650px;overflow-y:auto;display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:18px 13px;background:linear-gradient(165deg,#10152c 0%,#0c1022 76%,#1b1242 100%);border-radius:18px;box-shadow:0 10px 28px #1a1c3c22}
+.sidebar-brand{height:82px;min-height:82px;width:100%;display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:0 15px;margin:0 0 12px;color:#fff;font-size:22px;font-weight:800}
+.brand-mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;font-size:25px;font-weight:900;background:linear-gradient(135deg,#5425ee,#db19c9);color:#fff;box-shadow:0 5px 16px #711eea55}
+#app>.tabs button{position:relative;width:100%;height:46px;min-height:46px;flex:0 0 46px;padding:0 10px 0 54px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:13px;background:transparent;color:#b9c0d8;font-size:13px;line-height:1;font-weight:550;box-shadow:none}
+#app>.tabs button:before{position:absolute;top:0;left:15px;right:auto;width:24px;height:46px;display:grid;place-items:center;font-size:19px;line-height:1;filter:none;color:#aeb8da;content:"◈"}
+#app>.tabs button:nth-of-type(2):before{content:"▦"}#app>.tabs button:nth-of-type(3):before{content:"♙"}#app>.tabs button:nth-of-type(4):before{content:"＄"}#app>.tabs button:nth-of-type(5):before{content:"▣"}#app>.tabs button:nth-of-type(6):before{content:"▤"}#app>.tabs button:nth-of-type(7):before{content:"✉"}#app>.tabs button:nth-of-type(8):before{content:"⚙"}#app>.tabs button:nth-of-type(9):before{content:"♟"}#app>.tabs button:nth-of-type(10):before{content:"◉"}#app>.tabs button:nth-of-type(11):before{content:"▧"}#app>.tabs button:nth-of-type(12):before{content:"⇄"}
+#app>.tabs button:hover{background:#252b4b;color:#fff}
+#app>.tabs button.active{background:linear-gradient(110deg,#7424f4,#3157df);color:#fff;box-shadow:0 7px 18px #5229d955}
+#app>main{grid-column:2;grid-row:2;width:100%;max-width:none;min-width:0;margin:0;padding:24px 18px 30px 8px;background:rgba(255,255,255,.40);border-radius:0 0 22px 0}
+#app>main>.card{background:#fff;border:1px solid #edf0fc;border-radius:19px;padding:20px;margin-bottom:16px;box-shadow:0 8px 26px #26356b0b}
+.dashboard-page{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+.dashboard-top{margin-bottom:18px}
+.dash-grid{display:grid;grid-template-columns:1.48fr 1fr 1fr;grid-template-rows:174px 174px;gap:14px}
+.dash-card{position:relative;overflow:hidden;min-width:0;background:#fff;border:1px solid #edf0fc;border-radius:20px;padding:20px 22px;box-shadow:0 8px 24px #26356b0b}
+.balance-card{grid-column:1;grid-row:1/3}
+.users-card{grid-column:2;grid-row:1;background:linear-gradient(135deg,#5e76ff,#5725ef);border:0;color:#fff}
+.earnings-card{grid-column:3;grid-row:1;background:linear-gradient(135deg,#fff,#f1fffb);border-color:#dcf5ee}
+.deposits-card{grid-column:2;grid-row:2;background:linear-gradient(135deg,#fff,#f5f7ff)}
+.withdrawals-card{grid-column:3;grid-row:2;background:linear-gradient(135deg,#fff,#fff6f1);border-color:#f8e9e1}
+.dash-heading{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:650;color:#222747}
+.dash-symbol{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;font-size:20px;color:#6332ec;background:#f0edff}
+.users-card .dash-heading{color:#fff}.users-card .dash-symbol{color:#fff;background:#ffffff30}
+.dash-number{margin:8px 0 2px;font-size:34px;line-height:1.2;font-weight:800;letter-spacing:-.7px;color:#171b3a;overflow-wrap:anywhere}
+.users-card .dash-number{color:#fff;font-size:36px}
+.dash-change{font-size:12px;color:#7b829e}.users-card .dash-change{color:#eceaff}
+.dash-watermark{position:absolute;right:18px;top:20px;width:54px;height:54px;display:grid;place-items:center;border-radius:50%;background:#ffffff2c;color:#fff;font-size:30px}
+.dash-chart{height:245px;margin-top:20px;min-width:0}.dash-chart svg{width:100%;height:100%;display:block}
+.products-panel{background:#fff;border:1px solid #edf0fc;border-radius:20px;padding:17px 18px 8px;box-shadow:0 8px 26px #26356b0b}
+.products-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px}
+.products-heading>div:first-child{display:flex;align-items:center;gap:12px}.products-heading h3{font-size:21px;color:#171b3a}
+.products-cube{font-size:26px;color:#3159e8}.products-actions{display:flex;align-items:center;gap:12px}.products-count{font-size:12px;color:#8990a9}
+.products-actions button{border-radius:12px;background:#17152f;color:#fff;padding:12px 18px;font-size:13px}
+.dashboard-products-table{min-width:720px;border-collapse:separate;border-spacing:0}
+.dashboard-products-table th{background:#f5f6fb;color:#3e4565;font-size:12px;font-weight:700;padding:13px 12px}
+.dashboard-products-table th:first-child{border-radius:12px 0 0 12px}.dashboard-products-table th:last-child{border-radius:0 12px 12px 0}
+.dashboard-products-table td{padding:14px 12px;border-bottom:1px solid #f0f1f8;font-size:13px;color:#252947}
+.stat{background:#fff;border:1px solid #e9edfa;border-radius:17px;padding:19px;box-shadow:0 5px 18px #29366b0b}
+.stat .small,.small{font-size:12px;color:#77809f}.stat strong{font-size:27px!important;color:#171b3a}
+.primary{background:#17152f;color:#fff}.secondary{background:#edf0ff;color:#3449a3}.danger{background:#ffe8ed;color:#c51e4b}.success{background:#dcf8e9;color:#087d4c}
+.tablewrap{overflow:auto;border:1px solid #edf0fa;border-radius:14px}th{background:#f6f7fc;color:#3e4565;font-size:12px}th,td{padding:13px 12px;font-size:13px}
+@media(max-width:1050px){#app{grid-template-columns:205px minmax(0,1fr);padding:10px}.dash-grid{grid-template-columns:1.25fr 1fr;grid-template-rows:170px 170px 170px}.balance-card{grid-column:1;grid-row:1/3}.users-card{grid-column:2;grid-row:1}.earnings-card{grid-column:2;grid-row:2}.deposits-card{grid-column:1;grid-row:3}.withdrawals-card{grid-column:2;grid-row:3}}
+@media(max-width:700px){#app{grid-template-columns:70px minmax(0,1fr);grid-template-rows:66px minmax(0,1fr);padding:6px}#app>.tabs{top:6px;height:calc(100vh - 12px);min-height:0;padding:10px 5px;border-radius:14px}#app>.tabs button{width:60px;padding:0 2px 0 2px;text-align:center;font-size:8px}#app>.tabs button:before{left:0;right:0;top:0;width:100%;height:25px}#app>.sidebar-brand{justify-content:center;padding:0;font-size:0}#app>header{height:66px;padding:0 9px;border-radius:14px 14px 0 0}#app>header:before{left:8px;top:12px;width:48%;height:40px;font-size:10px;padding:0 10px}#app>header>button{font-size:10px;padding:9px 12px}#app>main{padding:12px 6px}#app>main>.card{padding:13px}.dash-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto;gap:8px}.dash-card{padding:12px;border-radius:14px;min-height:130px}.balance-card{grid-column:1/-1;grid-row:auto}.users-card,.earnings-card,.deposits-card,.withdrawals-card{grid-column:auto;grid-row:auto}.dash-number{font-size:22px}.users-card .dash-number{font-size:24px}.dash-chart{height:155px}.products-panel{padding:12px}.products-heading h3{font-size:17px}.products-actions{gap:5px}.products-count{display:none}.products-actions button{padding:9px;font-size:10px}}
+
 </style>
 </head>
 <body>
 <div id="login" class="card login"><h2>Zonguru Admin</h2><div class="field"><label>Username</label><input id="lu" value="admin"></div><div class="field"><label>Password</label><input id="lp" type="password"></div><button class="primary" onclick="login()">Login</button><div id="loginMsg"></div></div>
 <div id="app" class="hidden">
 <header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><button class="secondary" onclick="logout()">Logout</button></header>
-<nav class="tabs"><button data-t="users" class="active" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button></nav>
+<nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button></nav>
 <main>
-<section id="users" class="card"><h3>Users</h3><section id="adminCurrencyConverter" class="card" style="margin:12px 0;border:1px solid #d7e3ff;background:var(--card,#fff)"><h3 style="margin:0 0 6px">Currency Converter</h3><div class="small muted" style="margin-bottom:12px">Preview only — uses the platform's existing currency rates. This does not change any user balance.</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px"><div class="field"><label for="adminConvAmountA">Amount</label><div style="display:flex;gap:8px"><input id="adminConvAmountA" type="number" min="0" step="any" value="100" style="min-width:0;flex:1"><select id="adminConvCurrencyA" aria-label="First currency" style="min-width:100px;max-width:150px"></select></div></div><div class="field"><label for="adminConvAmountB">Converted amount</label><div style="display:flex;gap:8px"><input id="adminConvAmountB" type="text" readonly style="min-width:0;flex:1;background:#f7f9fc"><select id="adminConvCurrencyB" aria-label="Second currency" style="min-width:100px;max-width:150px"></select></div></div></div><div id="adminConvSummary" class="notice" style="margin-top:10px">100 USDT = 1,850.00 MXN</div></section><div class="grid" style="margin:12px 0"><div class="stat"><div class="small">Total User Balance (USDT)</div><strong id="totalUserBalance" style="font-size:22px">0.00</strong><div class="small">Current balances across visible users</div></div><div class="stat"><div class="small">Total Deposit Income (USDT)</div><strong id="totalDepositIncome" style="font-size:22px">0.00</strong><div class="small">Approved deposits only</div></div><div class="stat"><div class="small">Total Withdrawal (USDT)</div><strong id="totalWithdrawal" style="font-size:22px">0.00</strong><div class="small">Approved withdrawals only</div></div></div><div class="actions"><button class="secondary" onclick="loadFinancialSummary()">Refresh Totals</button></div><div id="usersMsg"></div><input id="userSearch" placeholder="Search users by username, email, phone or ID" oninput="renderUsers()" style="width:100%;padding:11px;border:1px solid #ddd6ee;border-radius:9px;margin:8px 0 12px"><div class="tablewrap"><table><thead><tr><th>User</th><th>Email / Phone</th><th id="secondAdminHeader" class="hidden">Second Admin</th><th>Balance</th><th>Frozen</th><th>Credit</th><th>VIP</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div></section><section id="admins" class="card hidden">
+<section id="dashboard" class="dashboard-page hidden">
+<div class="dashboard-top">
+  <div class="dash-grid">
+    <article class="dash-card balance-card"><div class="dash-heading"><span class="dash-symbol">▥</span><span>Total Balance</span></div><div class="dash-number" id="dashBalance">—</div><div class="dash-change">USDT · Current visible user balances</div><div id="dashChart" class="dash-chart"></div></article>
+    <article class="dash-card users-card"><div class="dash-heading"><span class="dash-symbol">♟</span><span>Total Users</span></div><div class="dash-number" id="dashUsers">—</div><div class="dash-change">Registered accounts</div><span class="dash-watermark">♟</span></article>
+    <article class="dash-card earnings-card"><div class="dash-heading"><span class="dash-symbol">▣</span><span>Total Products</span></div><div class="dash-number" id="dashProducts">—</div><div class="dash-change">Configured product pool</div></article>
+    <article class="dash-card deposits-card"><div class="dash-heading"><span class="dash-symbol">↓</span><span>Total Deposit</span></div><div class="dash-number" id="dashDeposits">—</div><div class="dash-change">Approved · USDT equivalent</div></article>
+    <article class="dash-card withdrawals-card"><div class="dash-heading"><span class="dash-symbol">↑</span><span>Total Withdrawal</span></div><div class="dash-number" id="dashWithdrawals">—</div><div class="dash-change">Approved · USDT equivalent</div></article>
+  </div>
+</div>
+<article class="products-panel">
+  <div class="products-heading"><div><span class="products-cube">◆</span><h3>Products</h3></div><div class="products-actions"><span class="products-count">Latest products</span><button class="primary" onclick="tab('products')">＋ &nbsp; Manage Products</button></div></div>
+  <div class="tablewrap"><table class="dashboard-products-table"><thead><tr><th>#</th><th>Product Name</th><th>Price</th><th>Profit Rate</th><th>VIP Level</th><th>Special Task</th><th>Action</th></tr></thead><tbody id="dashProductsBody"><tr><td colspan="7">Loading products…</td></tr></tbody></table></div>
+</article>
+</section>
+<section id="users" class="card"><h3>Users</h3><div class="grid" style="margin:12px 0"><div class="stat"><div class="small">Total User Balance (USDT)</div><strong id="totalUserBalance" style="font-size:22px">0.00</strong><div class="small">Current balances across visible users</div></div><div class="stat"><div class="small">Total Deposit Income (USDT)</div><strong id="totalDepositIncome" style="font-size:22px">0.00</strong><div class="small">Approved deposits only</div></div><div class="stat"><div class="small">Total Withdrawal (USDT)</div><strong id="totalWithdrawal" style="font-size:22px">0.00</strong><div class="small">Approved withdrawals only</div></div></div><div class="actions"><button class="secondary" onclick="loadFinancialSummary()">Refresh Totals</button></div><div id="usersMsg"></div><input id="userSearch" placeholder="Search users by username, email, phone or ID" oninput="renderUsers()" style="width:100%;padding:11px;border:1px solid #ddd6ee;border-radius:9px;margin:8px 0 12px"><div class="tablewrap"><table><thead><tr><th>User</th><th>Email / Phone</th><th id="secondAdminHeader" class="hidden">Second Admin</th><th>Balance</th><th>Frozen</th><th>Credit</th><th>VIP</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div></section><section id="currencyRatesPage" class="card hidden"><h3>Currency Converter</h3><p class="muted">View and calculate exchange rates using the platform currency rates. Preview only — this does not change any user balance.</p><section id="adminCurrencyConverter" class="card" style="margin:12px 0;border:1px solid #d7e3ff;background:var(--card,#fff)"><h3 style="margin:0 0 6px">Currency Converter</h3><div class="small muted" style="margin-bottom:12px">Preview only — uses the platform's existing currency rates. This does not change any user balance.</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px"><div class="field"><label for="adminConvAmountA">Amount</label><div style="display:flex;gap:8px"><input id="adminConvAmountA" type="number" min="0" step="any" value="100" style="min-width:0;flex:1"><select id="adminConvCurrencyA" aria-label="First currency" style="min-width:100px;max-width:150px"></select></div></div><div class="field"><label for="adminConvAmountB">Converted amount</label><div style="display:flex;gap:8px"><input id="adminConvAmountB" type="text" readonly style="min-width:0;flex:1;background:#f7f9fc"><select id="adminConvCurrencyB" aria-label="Second currency" style="min-width:100px;max-width:150px"></select></div></div></div><div id="adminConvSummary" class="notice" style="margin-top:10px">100 USDT = 1,850.00 MXN</div></section></section>
+<section id="admins" class="card hidden">
 <h3>Second Admin Management</h3>
 <div class="notice">Main Admin only. Each Second Admin can see and control only users registered with that admin's invite code. Existing users/data are preserved.</div>
 <div class="grid">
@@ -157,16 +290,24 @@ async function start(){
     const sub=document.querySelector('header .sub');
     if(sub) sub.textContent=(currentAdmin?.adminType==='superadmin'?'Main Admin':'Second Admin')+' · '+(currentAdmin?.username||'');
     $('login').classList.add('hidden');$('app').classList.remove('hidden');
-    await loadUsers();
+    await tab('dashboard');
   }catch(e){throw Error('Login could not finish: '+(e.message||'admin session check failed'));}
 }
 function tab(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
-  ['users','transactions','announcements','products','chat','audits','admins','platform','eventsSettings','bonuses'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
-  if(t==='users')loadUsers();if(t==='bonuses'){populateBonusRecipients();loadBonuses();}if(t==='announcements')loadAnnouncements();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();}if(t==='eventsSettings')loadEventsContent();if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
+  ['dashboard','users','transactions','announcements','products','chat','audits','admins','platform','eventsSettings','bonuses','currencyRatesPage'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
+  if(t==='dashboard')loadDashboard();if(t==='users')loadUsers();if(t==='bonuses'){populateBonusRecipients();loadBonuses();}if(t==='announcements')loadAnnouncements();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();}if(t==='eventsSettings')loadEventsContent();if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
 }
 
-function populateBonusRecipients(){
+async function loadDashboard(){
+try{const r=await Promise.all([api('/api/admin/users'),api('/api/admin/transactions'),api('/api/admin/products')]);users=r[0].users||[];products=r[2].products||[];const tx=r[1].transactions||[];
+const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);days.push({date:d,label:d.toLocaleDateString('en',{weekday:'short'}),value:0})}
+for(const x of tx){if(String(x.status).toLowerCase()!=='approved'||String(x.type).toLowerCase()!=='deposit')continue;const d=new Date(x.createdAt||x.updatedAt||x.date||0);const day=days.find(v=>v.date.toDateString()===d.toDateString());if(day){const n=Number(x.convertedAmountUSDT);day.value+=Number.isFinite(n)&&x.convertedAmountUSDT!=null?n:usdtValue(x.amount,x.currency)}}
+const max=Math.max(1,...days.map(v=>v.value));const pts=days.map((v,i)=>({x:25+i*55,y:140-v.value/max*105}));const path=pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ');
+$('dashChart').innerHTML='<svg viewBox="0 0 420 170" style="width:100%;height:100%" aria-label="Approved deposits for the last seven days">'+[35,70,105,140].map(y=>'<line x1="15" y1="'+y+'" x2="405" y2="'+y+'" stroke="#e9ecf7" stroke-dasharray="3 4"/>').join('')+'<path d="'+path+' L355 140 L25 140 Z" fill="#6338ed" opacity=".12"/><path d="'+path+'" fill="none" stroke="#6338ed" stroke-width="3" stroke-linecap="round"/>'+pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#6338ed"/>').join('')+days.map((v,i)=>'<text x="'+pts[i].x+'" y="162" text-anchor="middle" font-size="10" fill="#68708d">'+v.label+'</text>').join('')+'</svg>';$('dashBalance').textContent=money(users.reduce((n,u)=>n+Number(u.balances?.USDT??u.balance??0),0));$('dashUsers').textContent=users.length;$('dashProducts').textContent=products.length;
+let dep=0,wd=0;for(const x of tx){if(String(x.status).toLowerCase()!=='approved')continue;const v=Number(x.convertedAmountUSDT);if(String(x.type).toLowerCase()==='deposit')dep+=Number.isFinite(v)&&x.convertedAmountUSDT!=null?v:usdtValue(x.amount,x.currency);if(['withdraw','withdrawal'].includes(String(x.type).toLowerCase()))wd+=Number(x.debitedAmount)>0?usdtValue(x.debitedAmount,x.debitedCurrency||x.currency||'USDT'):usdtValue(x.amount,x.currency)}
+ $('dashDeposits').textContent=money(dep);$('dashWithdrawals').textContent=money(wd);$('dashProductsBody').innerHTML=products.slice(0,10).map((p,i)=>{const image=p.imageUrl||p.image||p.thumbnail||'';const img=image?'<img src="'+esc(image)+'" alt="" style="width:42px;height:42px;object-fit:contain;border-radius:10px;background:#f5f6fb">':'<span style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#f5f6fb;color:#8790b0">▣</span>';const special=p.specialTask?'Task '+esc(p.specialTaskNumber??'—')+' · '+money(p.specialRequiredAmount)+' · '+esc(p.specialCommissionMultiplier??'—')+'x':'Off';return '<tr><td>'+(i+1)+'</td><td><div style="display:flex;align-items:center;gap:10px">'+img+'<b>'+esc(p.name||p.title||'—')+'</b></div></td><td>'+money(p.price)+'</td><td>'+esc(p.profitRate??0)+'</td><td>VIP '+esc(p.requiredVip??0)+'</td><td>'+special+'</td><td><button class="secondary" onclick="tab(\\'products\\')">Manage</button></td></tr>'}).join('')||'<tr><td colspan="7">No products configured</td></tr>';
+}catch(e){console.error('Dashboard load failed',e)}}function populateBonusRecipients(){
  const sel=$('bonusRecipients');if(!sel)return;
  sel.innerHTML=users.map(u=>'<option value="'+esc(uid(u))+'">'+esc(u.username||uid(u))+' · '+esc(u.phone||u.email||'')+'</option>').join('');
 }
