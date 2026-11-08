@@ -74,6 +74,58 @@ body{background:linear-gradient(135deg,#f2f3ff,#f8f9ff 55%,#f0f2ff);color:var(--
 .tablewrap{border:1px solid #edf0fa;border-radius:14px}th{background:#f6f7fc;color:#3e4565;font-size:12px}th,td{padding:13px 12px;font-size:13px}
 @media(max-width:1000px){#app{grid-template-columns:190px minmax(0,1fr);padding:10px}}
 @media(max-width:760px){#app{grid-template-columns:68px minmax(0,1fr);grid-template-rows:62px minmax(0,1fr);padding:6px}#app>.tabs{top:6px;height:calc(100vh - 12px);padding:10px 5px}#app>.tabs button{width:58px;padding:29px 2px 5px;text-align:center;white-space:normal;font-size:8px}#app>.tabs button:before{left:0;right:0;top:6px}#app>header{height:62px;padding:0 10px}#app>header:after{width:min(175px,40vw);font-size:10px;padding:10px}#app>main{padding:12px 6px}}
+
+/* Precise screenshot-inspired Zonguru dashboard */
+:root{--z-navy:#10152c;--z-ink:#171b3a;--z-purple:#6928ed;--z-blue:#3159e8;--z-bg:#f3f4ff;--z-line:#edf0fa}
+body{background:linear-gradient(135deg,#f1f2ff 0%,#f8f9ff 58%,#eff1ff 100%);color:var(--z-ink);font-family:Inter,"Segoe UI",Arial,sans-serif}
+#app{display:grid;grid-template-columns:232px minmax(0,1fr);grid-template-rows:96px minmax(0,1fr);gap:0;min-height:100vh;padding:18px}
+#app>header{grid-column:2;grid-row:1;height:96px;position:relative;z-index:4;background:rgba(255,255,255,.96);border:1px solid #eef0fa;border-bottom:0;border-radius:22px 22px 0 0;padding:0 24px;display:flex;align-items:center;justify-content:flex-end;box-shadow:0 8px 26px #27336a0b}
+#app>header>div{display:none}
+#app>header:before{content:"⌕  Search users, transactions...";position:absolute;left:20px;top:20px;width:min(480px,48%);height:54px;display:flex;align-items:center;padding:0 20px;border-radius:28px;background:#f1f2fc;color:#858ba5;font-size:14px}
+#app>header>button{background:#f4f5ff;color:#202544;border-radius:28px;padding:12px 20px;font-size:13px;font-weight:650}
+#app>.tabs{grid-column:1;grid-row:1/3;position:sticky;top:18px;height:calc(100vh - 36px);min-height:650px;overflow-y:auto;display:flex;flex-direction:column;align-items:stretch;gap:7px;padding:18px 13px;background:linear-gradient(165deg,#10152c 0%,#0c1022 76%,#1b1242 100%);border-radius:18px;box-shadow:0 10px 28px #1a1c3c22}
+.sidebar-brand{height:82px;min-height:82px;width:100%;display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:0 15px;margin:0 0 12px;color:#fff;font-size:22px;font-weight:800}
+.brand-mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;font-size:25px;font-weight:900;background:linear-gradient(135deg,#5425ee,#db19c9);color:#fff;box-shadow:0 5px 16px #711eea55}
+#app>.tabs button{position:relative;width:100%;height:46px;min-height:46px;flex:0 0 46px;padding:0 10px 0 54px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:13px;background:transparent;color:#b9c0d8;font-size:13px;line-height:1;font-weight:550;box-shadow:none}
+#app>.tabs button:before{position:absolute;top:0;left:15px;right:auto;width:24px;height:46px;display:grid;place-items:center;font-size:19px;line-height:1;filter:none;color:#aeb8da;content:"◈"}
+#app>.tabs button:nth-of-type(2):before{content:"▦"}#app>.tabs button:nth-of-type(3):before{content:"♙"}#app>.tabs button:nth-of-type(4):before{content:"＄"}#app>.tabs button:nth-of-type(5):before{content:"▣"}#app>.tabs button:nth-of-type(6):before{content:"▤"}#app>.tabs button:nth-of-type(7):before{content:"✉"}#app>.tabs button:nth-of-type(8):before{content:"⚙"}#app>.tabs button:nth-of-type(9):before{content:"♟"}#app>.tabs button:nth-of-type(10):before{content:"◉"}#app>.tabs button:nth-of-type(11):before{content:"▧"}#app>.tabs button:nth-of-type(12):before{content:"⇄"}
+#app>.tabs button:hover{background:#252b4b;color:#fff}
+#app>.tabs button.active{background:linear-gradient(110deg,#7424f4,#3157df);color:#fff;box-shadow:0 7px 18px #5229d955}
+#app>main{grid-column:2;grid-row:2;width:100%;max-width:none;min-width:0;margin:0;padding:24px 18px 30px 8px;background:rgba(255,255,255,.40);border-radius:0 0 22px 0}
+#app>main>.card{background:#fff;border:1px solid #edf0fc;border-radius:19px;padding:20px;margin-bottom:16px;box-shadow:0 8px 26px #26356b0b}
+.dashboard-page{padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
+.dashboard-top{margin-bottom:18px}
+.dash-grid{display:grid;grid-template-columns:1.48fr 1fr 1fr;grid-template-rows:174px 174px;gap:14px}
+.dash-card{position:relative;overflow:hidden;min-width:0;background:#fff;border:1px solid #edf0fc;border-radius:20px;padding:20px 22px;box-shadow:0 8px 24px #26356b0b}
+.balance-card{grid-column:1;grid-row:1/3}
+.users-card{grid-column:2;grid-row:1;background:linear-gradient(135deg,#5e76ff,#5725ef);border:0;color:#fff}
+.earnings-card{grid-column:3;grid-row:1;background:linear-gradient(135deg,#fff,#f1fffb);border-color:#dcf5ee}
+.deposits-card{grid-column:2;grid-row:2;background:linear-gradient(135deg,#fff,#f5f7ff)}
+.withdrawals-card{grid-column:3;grid-row:2;background:linear-gradient(135deg,#fff,#fff6f1);border-color:#f8e9e1}
+.dash-heading{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:650;color:#222747}
+.dash-symbol{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;font-size:20px;color:#6332ec;background:#f0edff}
+.users-card .dash-heading{color:#fff}.users-card .dash-symbol{color:#fff;background:#ffffff30}
+.dash-number{margin:8px 0 2px;font-size:34px;line-height:1.2;font-weight:800;letter-spacing:-.7px;color:#171b3a;overflow-wrap:anywhere}
+.users-card .dash-number{color:#fff;font-size:36px}
+.dash-change{font-size:12px;color:#7b829e}.users-card .dash-change{color:#eceaff}
+.dash-watermark{position:absolute;right:18px;top:20px;width:54px;height:54px;display:grid;place-items:center;border-radius:50%;background:#ffffff2c;color:#fff;font-size:30px}
+.dash-chart{height:245px;margin-top:20px;min-width:0}.dash-chart svg{width:100%;height:100%;display:block}
+.products-panel{background:#fff;border:1px solid #edf0fc;border-radius:20px;padding:17px 18px 8px;box-shadow:0 8px 26px #26356b0b}
+.products-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px}
+.products-heading>div:first-child{display:flex;align-items:center;gap:12px}.products-heading h3{font-size:21px;color:#171b3a}
+.products-cube{font-size:26px;color:#3159e8}.products-actions{display:flex;align-items:center;gap:12px}.products-count{font-size:12px;color:#8990a9}
+.products-actions button{border-radius:12px;background:#17152f;color:#fff;padding:12px 18px;font-size:13px}
+.dashboard-products-table{min-width:720px;border-collapse:separate;border-spacing:0}
+.dashboard-products-table th{background:#f5f6fb;color:#3e4565;font-size:12px;font-weight:700;padding:13px 12px}
+.dashboard-products-table th:first-child{border-radius:12px 0 0 12px}.dashboard-products-table th:last-child{border-radius:0 12px 12px 0}
+.dashboard-products-table td{padding:14px 12px;border-bottom:1px solid #f0f1f8;font-size:13px;color:#252947}
+.stat{background:#fff;border:1px solid #e9edfa;border-radius:17px;padding:19px;box-shadow:0 5px 18px #29366b0b}
+.stat .small,.small{font-size:12px;color:#77809f}.stat strong{font-size:27px!important;color:#171b3a}
+.primary{background:#17152f;color:#fff}.secondary{background:#edf0ff;color:#3449a3}.danger{background:#ffe8ed;color:#c51e4b}.success{background:#dcf8e9;color:#087d4c}
+.tablewrap{overflow:auto;border:1px solid #edf0fa;border-radius:14px}th{background:#f6f7fc;color:#3e4565;font-size:12px}th,td{padding:13px 12px;font-size:13px}
+@media(max-width:1050px){#app{grid-template-columns:205px minmax(0,1fr);padding:10px}.dash-grid{grid-template-columns:1.25fr 1fr;grid-template-rows:170px 170px 170px}.balance-card{grid-column:1;grid-row:1/3}.users-card{grid-column:2;grid-row:1}.earnings-card{grid-column:2;grid-row:2}.deposits-card{grid-column:1;grid-row:3}.withdrawals-card{grid-column:2;grid-row:3}}
+@media(max-width:700px){#app{grid-template-columns:70px minmax(0,1fr);grid-template-rows:66px minmax(0,1fr);padding:6px}#app>.tabs{top:6px;height:calc(100vh - 12px);min-height:0;padding:10px 5px;border-radius:14px}#app>.tabs button{width:60px;padding:0 2px 0 2px;text-align:center;font-size:8px}#app>.tabs button:before{left:0;right:0;top:0;width:100%;height:25px}#app>.sidebar-brand{justify-content:center;padding:0;font-size:0}#app>header{height:66px;padding:0 9px;border-radius:14px 14px 0 0}#app>header:before{left:8px;top:12px;width:48%;height:40px;font-size:10px;padding:0 10px}#app>header>button{font-size:10px;padding:9px 12px}#app>main{padding:12px 6px}#app>main>.card{padding:13px}.dash-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto;gap:8px}.dash-card{padding:12px;border-radius:14px;min-height:130px}.balance-card{grid-column:1/-1;grid-row:auto}.users-card,.earnings-card,.deposits-card,.withdrawals-card{grid-column:auto;grid-row:auto}.dash-number{font-size:22px}.users-card .dash-number{font-size:24px}.dash-chart{height:155px}.products-panel{padding:12px}.products-heading h3{font-size:17px}.products-actions{gap:5px}.products-count{display:none}.products-actions button{padding:9px;font-size:10px}}
+
 </style>
 </head>
 <body>
@@ -82,14 +134,21 @@ body{background:linear-gradient(135deg,#f2f3ff,#f8f9ff 55%,#f0f2ff);color:var(--
 <header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><button class="secondary" onclick="logout()">Logout</button></header>
 <nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button></nav>
 <main>
-<section id="dashboard" class="card hidden"><h3>Dashboard Overview</h3>
-<div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-<div class="stat"><div class="small">Total Balance (USDT)</div><strong id="dashBalance">0.00</strong><div id="dashChart" style="height:175px;margin-top:12px"></div></div>
-<div class="stat" style="background:linear-gradient(135deg,#5e72ff,#5426ee);color:#fff"><div>Total Users</div><strong id="dashUsers" style="color:#fff">0</strong></div>
-<div class="stat"><div class="small">Approved Deposits (USDT)</div><strong id="dashDeposits">0.00</strong></div>
-<div class="stat"><div class="small">Total Withdrawal (USDT)</div><strong id="dashWithdrawals">0.00</strong></div>
-<div class="stat"><div class="small">Products</div><strong id="dashProducts">0</strong></div></div>
-<div class="card"><h3>Products</h3><div class="tablewrap"><table><thead><tr><th>#</th><th>Product Name</th><th>Price</th><th>Profit Rate</th><th>VIP</th></tr></thead><tbody id="dashProductsBody"></tbody></table></div><button class="secondary" onclick="tab('products')">Manage Products</button></div></section>
+<section id="dashboard" class="dashboard-page hidden">
+<div class="dashboard-top">
+  <div class="dash-grid">
+    <article class="dash-card balance-card"><div class="dash-heading"><span class="dash-symbol">▥</span><span>Total Balance</span></div><div class="dash-number" id="dashBalance">—</div><div class="dash-change">USDT · Current visible user balances</div><div id="dashChart" class="dash-chart"></div></article>
+    <article class="dash-card users-card"><div class="dash-heading"><span class="dash-symbol">♟</span><span>Total Users</span></div><div class="dash-number" id="dashUsers">—</div><div class="dash-change">Registered accounts</div><span class="dash-watermark">♟</span></article>
+    <article class="dash-card earnings-card"><div class="dash-heading"><span class="dash-symbol">▣</span><span>Total Products</span></div><div class="dash-number" id="dashProducts">—</div><div class="dash-change">Configured product pool</div></article>
+    <article class="dash-card deposits-card"><div class="dash-heading"><span class="dash-symbol">↓</span><span>Total Deposit</span></div><div class="dash-number" id="dashDeposits">—</div><div class="dash-change">Approved · USDT equivalent</div></article>
+    <article class="dash-card withdrawals-card"><div class="dash-heading"><span class="dash-symbol">↑</span><span>Total Withdrawal</span></div><div class="dash-number" id="dashWithdrawals">—</div><div class="dash-change">Approved · USDT equivalent</div></article>
+  </div>
+</div>
+<article class="products-panel">
+  <div class="products-heading"><div><span class="products-cube">◆</span><h3>Products</h3></div><div class="products-actions"><span class="products-count">Latest products</span><button class="primary" onclick="tab('products')">＋ &nbsp; Manage Products</button></div></div>
+  <div class="tablewrap"><table class="dashboard-products-table"><thead><tr><th>#</th><th>Product Name</th><th>Price</th><th>Profit Rate</th><th>VIP Level</th><th>Special Task</th><th>Action</th></tr></thead><tbody id="dashProductsBody"><tr><td colspan="7">Loading products…</td></tr></tbody></table></div>
+</article>
+</section>
 <section id="users" class="card"><h3>Users</h3><div class="grid" style="margin:12px 0"><div class="stat"><div class="small">Total User Balance (USDT)</div><strong id="totalUserBalance" style="font-size:22px">0.00</strong><div class="small">Current balances across visible users</div></div><div class="stat"><div class="small">Total Deposit Income (USDT)</div><strong id="totalDepositIncome" style="font-size:22px">0.00</strong><div class="small">Approved deposits only</div></div><div class="stat"><div class="small">Total Withdrawal (USDT)</div><strong id="totalWithdrawal" style="font-size:22px">0.00</strong><div class="small">Approved withdrawals only</div></div></div><div class="actions"><button class="secondary" onclick="loadFinancialSummary()">Refresh Totals</button></div><div id="usersMsg"></div><input id="userSearch" placeholder="Search users by username, email, phone or ID" oninput="renderUsers()" style="width:100%;padding:11px;border:1px solid #ddd6ee;border-radius:9px;margin:8px 0 12px"><div class="tablewrap"><table><thead><tr><th>User</th><th>Email / Phone</th><th id="secondAdminHeader" class="hidden">Second Admin</th><th>Balance</th><th>Frozen</th><th>Credit</th><th>VIP</th><th>Actions</th></tr></thead><tbody id="usersBody"></tbody></table></div></section><section id="currencyRatesPage" class="card hidden"><h3>Currency Converter</h3><p class="muted">View and calculate exchange rates using the platform currency rates. Preview only — this does not change any user balance.</p><section id="adminCurrencyConverter" class="card" style="margin:12px 0;border:1px solid #d7e3ff;background:var(--card,#fff)"><h3 style="margin:0 0 6px">Currency Converter</h3><div class="small muted" style="margin-bottom:12px">Preview only — uses the platform's existing currency rates. This does not change any user balance.</div><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px"><div class="field"><label for="adminConvAmountA">Amount</label><div style="display:flex;gap:8px"><input id="adminConvAmountA" type="number" min="0" step="any" value="100" style="min-width:0;flex:1"><select id="adminConvCurrencyA" aria-label="First currency" style="min-width:100px;max-width:150px"></select></div></div><div class="field"><label for="adminConvAmountB">Converted amount</label><div style="display:flex;gap:8px"><input id="adminConvAmountB" type="text" readonly style="min-width:0;flex:1;background:#f7f9fc"><select id="adminConvCurrencyB" aria-label="Second currency" style="min-width:100px;max-width:150px"></select></div></div></div><div id="adminConvSummary" class="notice" style="margin-top:10px">100 USDT = 1,850.00 MXN</div></section></section>
 <section id="admins" class="card hidden">
 <h3>Second Admin Management</h3>
