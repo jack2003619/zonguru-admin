@@ -231,7 +231,7 @@ async function start(){
     const sub=document.querySelector('header .sub');
     if(sub) sub.textContent=(currentAdmin?.adminType==='superadmin'?'Main Admin':'Second Admin')+' · '+(currentAdmin?.username||'');
     $('login').classList.add('hidden');$('app').classList.remove('hidden');
-    await loadUsers();
+    await tab('dashboard');
   }catch(e){throw Error('Login could not finish: '+(e.message||'admin session check failed'));}
 }
 function tab(t){
