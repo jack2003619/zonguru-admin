@@ -486,14 +486,10 @@ function translateAdminText(value){
  const trimmed=source.trim();
  if(dict[trimmed])return source.replace(trimmed,dict[trimmed]);
  let translated=source;
- const dynamic=[
-  [/^(\s*)Main Admin · (.+?)(\s*)$/,'Main Admin · '],
-  [/^(\s*)Second Admin · (.+?)(\s*)$/,'Second Admin · ']
- ];
- for(const [regex,prefix] of dynamic){
-  const m=translated.match(regex);
-  if(m)return m[1]+(dict[prefix.trim()]||prefix.trim())+' · '+m[2]+m[3];
- }
+ const mainRoleMatch=translated.match(/^(\s*)Main Admin · (.+?)(\s*)$/);
+ if(mainRoleMatch)return mainRoleMatch[1]+(dict['Main Admin']||'Main Admin')+' · '+mainRoleMatch[2]+mainRoleMatch[3];
+ const secondRoleMatch=translated.match(/^(\s*)Second Admin · (.+?)(\s*)$/);
+ if(secondRoleMatch)return secondRoleMatch[1]+(dict['Second Admin']||'Second Admin')+' · '+secondRoleMatch[2]+secondRoleMatch[3];
  const patterns=[
   [/^(\s*)Account ID:(.*)$/,'Account ID:'],
   [/^(\s*)Submitted:(.*)$/,'Submitted:'],
