@@ -1094,28 +1094,46 @@ app.get('/api/admin/dashboard/income', auth, async (req, res) => {
     if (!remote.ok || result.success !== true) {
       return res.status(remote.status || 502).json({
         success: false,
-        message: result.message || 'Unable to load income trend from platform backend'
+        message: result.message || 'Unable to load dashboard summary from platform backend'
       });
     }
     const scopedIds = await getScopedUserIds(req);
     const allowed = scopedIds ? new Set(scopedIds.map(id => String(id))) : null;
-    const sumForScope = rows => (Array.isArray(rows) ? rows : []).reduce((sum, row) => {
-      if (allowed && !allowed.has(String(row.userId || ''))) return sum;
+    const scopedRows = rows => (Array.isArray(rows) ? rows : []).filter(row =>
+      !allowed || allowed.has(String(row.userId || ''))
+    );
+    const sumRows = (rows, predicate = () => true) => scopedRows(rows).reduce((sum, row) => {
+      if (!predicate(row)) return sum;
       const amount = Number(row.amountUSDT || 0);
       return sum + (Number.isFinite(amount) && amount > 0 ? amount : 0);
     }, 0);
+    const allTime = scopedRows(result.allTimeTransactionsByUser);
+    const monthly = scopedRows(result.monthlyTransactionsByUser);
+    const dailyMap = new Map();
+    for (const row of scopedRows(result.dailyDepositsByUser)) {
+      const amount = Number(row.amountUSDT || 0);
+      if (Number.isFinite(amount) && amount > 0) dailyMap.set(row.day, (dailyMap.get(row.day) || 0) + amount);
+    }
+    const typeIs = (row, type) => String(row.type || '').toLowerCase() === type;
     res.set('Cache-Control', 'no-store');
     return res.json({
       success: true,
-      currentMonthIncomeUSDT: Number(sumForScope(result.currentMonthByUser).toFixed(2)),
-      previousMonthIncomeUSDT: Number(sumForScope(result.previousMonthByUser).toFixed(2)),
-      estimatedLegacyOrders: Number(result.estimatedLegacyOrders || 0),
+      currentMonthIncomeUSDT: Number(sumRows(result.currentMonthByUser).toFixed(2)),
+      previousMonthIncomeUSDT: Number(sumRows(result.previousMonthByUser).toFixed(2)),
+      totalDepositUSDT: Number(sumRows(allTime, row => typeIs(row, 'deposit')).toFixed(2)),
+      totalWithdrawalUSDT: Number(sumRows(allTime, row => ['withdrawal', 'withdraw'].some(type => typeIs(row, type))).toFixed(2)),
+      currentMonthDepositUSDT: Number(sumRows(monthly, row => typeIs(row, 'deposit') && row.period === 'current').toFixed(2)),
+      previousMonthDepositUSDT: Number(sumRows(monthly, row => typeIs(row, 'deposit') && row.period === 'previous').toFixed(2)),
+      currentMonthWithdrawalUSDT: Number(sumRows(monthly, row => ['withdrawal', 'withdraw'].some(type => typeIs(row, type)) && row.period === 'current').toFixed(2)),
+      previousMonthWithdrawalUSDT: Number(sumRows(monthly, row => ['withdrawal', 'withdraw'].some(type => typeIs(row, type)) && row.period === 'previous').toFixed(2)),
+      dailyDeposits: [...dailyMap.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([day, amountUSDT]) => ({ day, amountUSDT: Number(amountUSDT.toFixed(2)) })),
+      estimatedLegacyOrders: isSuperAdmin(req) ? Number(result.estimatedLegacyOrders || 0) : null,
       currentMonthStart: result.currentMonthStart || null,
       previousMonthStart: result.previousMonthStart || null
     });
   } catch (error) {
-    console.error('Dashboard income trend proxy:', error.message);
-    return res.status(502).json({ success: false, message: 'Unable to load income trend from platform backend' });
+    console.error('Dashboard financial summary proxy:', error.message);
+    return res.status(502).json({ success: false, message: 'Unable to load dashboard financial summary' });
   }
 });
 
