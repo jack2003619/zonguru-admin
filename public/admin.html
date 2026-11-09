@@ -299,15 +299,120 @@ function tab(t){
   if(t==='dashboard')loadDashboard();if(t==='users')loadUsers();if(t==='bonuses'){populateBonusRecipients();loadBonuses();}if(t==='announcements')loadAnnouncements();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();}if(t==='eventsSettings')loadEventsContent();if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
 }
 
+function setDashboardTrend(id,current,previous){
+ const el=$(id);if(!el)return;
+ const c=Number(current||0),p=Number(previous||0);
+ if(!Number.isFinite(c)||!Number.isFinite(p)){el.dataset.trend='flat';el.innerHTML='<span class="trend-arrow">—</span><span>—</span>';return}
+ let direction='flat',label='0.0%';
+ if(p>0){const pct=((c-p)/p)*100;direction=pct>0?'up':pct<0?'down':'flat';label=(pct>0?'+':'')+pct.toFixed(1)+'%'}
+ else if(c>0){direction='up';label='NEW'}
+ el.dataset.trend=direction;
+ el.innerHTML='<span class="trend-arrow">'+(direction==='up'?'↑':direction==='down'?'↓':'→')+'</span><span>'+label+'</span>';
+}
+function setDashboardTrendUnavailable(id){
+ const el=$(id);if(!el)return;
+ el.dataset.trend='flat';el.innerHTML='<span class="trend-arrow">—</span><span>—</span>';
+}
+function yangonMonthBounds(now=new Date()){
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Yangon',year:'numeric',month:'2-digit'}).formatToParts(now);
+ const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
+ const y=Number(p.year),m=Number(p.month),offset=390*60000;
+ return {
+  previousStart:new Date(Date.UTC(y,m-2,1)-offset),
+  currentStart:new Date(Date.UTC(y,m-1,1)-offset),
+  nextStart:new Date(Date.UTC(y,m,1)-offset)
+ };
+}
 async function loadDashboard(){
-try{const r=await Promise.all([api('/api/admin/users'),api('/api/admin/transactions'),api('/api/admin/products')]);users=r[0].users||[];products=r[2].products||[];const tx=r[1].transactions||[];
-const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);days.push({date:d,label:d.toLocaleDateString('en',{weekday:'short'}),value:0})}
-for(const x of tx){if(String(x.status).toLowerCase()!=='approved'||String(x.type).toLowerCase()!=='deposit')continue;const d=new Date(x.createdAt||x.updatedAt||x.date||0);const day=days.find(v=>v.date.toDateString()===d.toDateString());if(day){const n=Number(x.convertedAmountUSDT);day.value+=Number.isFinite(n)&&x.convertedAmountUSDT!=null?n:usdtValue(x.amount,x.currency)}}
-const max=Math.max(1,...days.map(v=>v.value));const pts=days.map((v,i)=>({x:25+i*55,y:140-v.value/max*105}));const path=pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ');
-$('dashChart').innerHTML='<svg viewBox="0 0 420 170" style="width:100%;height:100%" aria-label="Approved deposits for the last seven days">'+[35,70,105,140].map(y=>'<line x1="15" y1="'+y+'" x2="405" y2="'+y+'" stroke="#e9ecf7" stroke-dasharray="3 4"/>').join('')+'<path d="'+path+' L355 140 L25 140 Z" fill="#6338ed" opacity=".12"/><path d="'+path+'" fill="none" stroke="#6338ed" stroke-width="3" stroke-linecap="round"/>'+pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#6338ed"/>').join('')+days.map((v,i)=>'<text x="'+pts[i].x+'" y="162" text-anchor="middle" font-size="10" fill="#68708d">'+v.label+'</text>').join('')+'</svg>';$('dashBalance').textContent=money(users.reduce((n,u)=>n+Number(u.balances?.USDT??u.balance??0),0));$('dashUsers').textContent=users.length;$('dashProducts').textContent=products.length;
-let dep=0,wd=0;for(const x of tx){if(String(x.status).toLowerCase()!=='approved')continue;const v=Number(x.convertedAmountUSDT);if(String(x.type).toLowerCase()==='deposit')dep+=Number.isFinite(v)&&x.convertedAmountUSDT!=null?v:usdtValue(x.amount,x.currency);if(['withdraw','withdrawal'].includes(String(x.type).toLowerCase()))wd+=Number(x.debitedAmount)>0?usdtValue(x.debitedAmount,x.debitedCurrency||x.currency||'USDT'):usdtValue(x.amount,x.currency)}
- $('dashDeposits').textContent=money(dep);$('dashWithdrawals').textContent=money(wd);$('dashProductsBody').innerHTML=products.slice(0,10).map((p,i)=>{const image=p.imageUrl||p.image||p.thumbnail||'';const img=image?'<img src="'+esc(image)+'" alt="" style="width:42px;height:42px;object-fit:contain;border-radius:10px;background:#f5f6fb">':'<span style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#f5f6fb;color:#8790b0">▣</span>';const special=p.specialTask?'Task '+esc(p.specialTaskNumber??'—')+' · '+money(p.specialRequiredAmount)+' · '+esc(p.specialCommissionMultiplier??'—')+'x':'Off';return '<tr><td>'+(i+1)+'</td><td><div style="display:flex;align-items:center;gap:10px">'+img+'<b>'+esc(p.name||p.title||'—')+'</b></div></td><td>'+money(p.price)+'</td><td>'+esc(p.profitRate??0)+'</td><td>VIP '+esc(p.requiredVip??0)+'</td><td>'+special+'</td><td><button class="secondary" onclick="tab(\\'products\\')">Manage</button></td></tr>'}).join('')||'<tr><td colspan="7">No products configured</td></tr>';
-}catch(e){console.error('Dashboard load failed',e)}}function populateBonusRecipients(){
+ try{
+  const [userResult,txResult,productResult]=await Promise.all([
+   api('/api/admin/users'),api('/api/admin/transactions'),api('/api/admin/products')
+  ]);
+  users=userResult.users||[];products=productResult.products||[];
+  const tx=txResult.transactions||[];
+  const totalBalance=users.reduce((sum,u)=>sum+Number(u.balances?.USDT??u.balance??0),0);
+  const totalIncome=users.reduce((sum,u)=>sum+Number(u.totalProfit||0),0);
+  $('dashBalance').textContent=money(totalBalance);
+  $('dashUsers').textContent=users.length.toLocaleString('en-US');
+  $('dashIncome').textContent=money(totalIncome);
+  if($('productsCountLabel'))$('productsCountLabel').textContent=products.length.toLocaleString('en-US')+' configured products';
+
+  const bounds=yangonMonthBounds();
+  const monthTotals={deposit:{current:0,previous:0},withdrawal:{current:0,previous:0}};
+  let dep=0,wd=0;
+  const approvedDeposits=[];
+  for(const x of tx){
+   if(String(x.status||'').toLowerCase()!=='approved')continue;
+   const type=String(x.type||'').toLowerCase();
+   const isDeposit=type==='deposit';
+   const isWithdrawal=type==='withdrawal'||type==='withdraw';
+   if(!isDeposit&&!isWithdrawal)continue;
+   let amount=0;
+   if(isDeposit){
+    const converted=Number(x.convertedAmountUSDT);
+    amount=Number.isFinite(converted)&&x.convertedAmountUSDT!==null&&x.convertedAmountUSDT!==undefined?converted:usdtValue(x.amount,x.currency);
+    dep+=amount;
+   }else{
+    const debit=Number(x.debitedAmount);
+    amount=debit>0?usdtValue(debit,x.debitedCurrency||'USDT'):((Number.isFinite(Number(x.convertedAmountUSDT))&&x.convertedAmountUSDT!==null&&x.convertedAmountUSDT!==undefined)?Number(x.convertedAmountUSDT):usdtValue(x.amount,x.currency));
+    wd+=amount;
+   }
+   const created=new Date(x.createdAt||x.updatedAt||x.date||0);
+   if(!Number.isFinite(created.getTime()))continue;
+   const key=isDeposit?'deposit':'withdrawal';
+   if(created>=bounds.currentStart&&created<bounds.nextStart)monthTotals[key].current+=amount;
+   else if(created>=bounds.previousStart&&created<bounds.currentStart)monthTotals[key].previous+=amount;
+   if(isDeposit)approvedDeposits.push({created,amount});
+  }
+  $('dashDeposits').textContent=money(dep);
+  $('dashWithdrawals').textContent=money(wd);
+  setDashboardTrend('dashDepositsTrend',monthTotals.deposit.current,monthTotals.deposit.previous);
+  setDashboardTrend('dashWithdrawalsTrend',monthTotals.withdrawal.current,monthTotals.withdrawal.previous);
+
+  try{
+   const incomeTrend=await api('/api/admin/dashboard/income');
+   setDashboardTrend('dashIncomeTrend',incomeTrend.currentMonthIncomeUSDT,incomeTrend.previousMonthIncomeUSDT);
+   $('dashIncomeTrend').title='Compared with the previous month';
+  }catch(incomeError){
+   const key='zonguru_admin_income_snapshot_'+String(currentAdmin?.id||'admin');
+   const previous=Number(localStorage.getItem(key));
+   if(Number.isFinite(previous)&&previous>0){
+    setDashboardTrend('dashIncomeTrend',totalIncome,previous);
+    $('dashIncomeTrend').title='Change since this browser last viewed the dashboard';
+   }else{
+    setDashboardTrendUnavailable('dashIncomeTrend');
+    $('dashIncomeTrend').title='Monthly income comparison will appear after the income trend service is deployed';
+   }
+   localStorage.setItem(key,String(totalIncome));
+  }
+
+  const days=[];
+  for(let i=6;i>=0;i--){
+   const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);
+   days.push({date:d,label:d.toLocaleDateString('en',{weekday:'short'}),value:0});
+  }
+  for(const item of approvedDeposits){
+   const day=days.find(v=>v.date.toDateString()===item.created.toDateString());
+   if(day)day.value+=item.amount;
+  }
+  const max=Math.max(1,...days.map(v=>v.value));
+  const pts=days.map((v,i)=>({x:25+i*55,y:140-v.value/max*105}));
+  const path=pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ');
+  $('dashChart').innerHTML='<svg viewBox="0 0 420 170" style="width:100%;height:100%" aria-label="Approved deposits for the last seven days">'+[35,70,105,140].map(y=>'<line x1="15" y1="'+y+'" x2="405" y2="'+y+'" stroke="#e9ecf7" stroke-dasharray="3 4"/>').join('')+'<path d="'+path+' L355 140 L25 140 Z" fill="#6338ed" opacity=".12"/><path d="'+path+'" fill="none" stroke="#6338ed" stroke-width="3" stroke-linecap="round"/>'+pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#6338ed"/>').join('')+days.map((v,i)=>'<text x="'+pts[i].x+'" y="162" text-anchor="middle" font-size="10" fill="#68708d">'+v.label+'</text>').join('')+'</svg>';
+
+  $('dashProductsBody').innerHTML=products.slice(0,10).map((p,i)=>{
+   const image=p.imageUrl||p.image||p.thumbnail||'';
+   const img=image?'<img src="'+esc(image)+'" alt="" style="width:42px;height:42px;object-fit:contain;border-radius:10px;background:#f5f6fb">':'<span style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#f5f6fb;color:#8790b0">▣</span>';
+   const special=p.specialTask?'Task '+esc(p.specialTaskNumber??'—')+' · '+money(p.specialRequiredAmount)+' · '+esc(p.specialCommissionMultiplier??'—')+'x':'Off';
+   return '<tr><td>'+(i+1)+'</td><td><div style="display:flex;align-items:center;gap:10px">'+img+'<b>'+esc(p.name||p.title||'—')+'</b></div></td><td>'+money(p.price)+'</td><td>'+esc(p.profitRate??0)+'</td><td>VIP '+esc(p.requiredVip??0)+'</td><td>'+special+'</td><td><button class="secondary" onclick="tab(\\'products\\')">Manage</button></td></tr>';
+  }).join('')||'<tr><td colspan="7">No products configured</td></tr>';
+ }catch(e){
+  console.error('Dashboard load failed',e);
+  ['dashBalance','dashUsers','dashIncome','dashDeposits','dashWithdrawals'].forEach(id=>{if($(id))$(id).textContent='—'});
+  setDashboardTrendUnavailable('dashIncomeTrend');setDashboardTrendUnavailable('dashDepositsTrend');setDashboardTrendUnavailable('dashWithdrawalsTrend');
+ }
+}
+function populateBonusRecipients(){
  const sel=$('bonusRecipients');if(!sel)return;
  sel.innerHTML=users.map(u=>'<option value="'+esc(uid(u))+'">'+esc(u.username||uid(u))+' · '+esc(u.phone||u.email||'')+'</option>').join('');
 }
