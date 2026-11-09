@@ -262,7 +262,7 @@ body{min-width:320px}
   </div>
 </div>
 <article class="products-panel">
-  <div class="products-heading"><div><span class="products-cube">◆</span><h3>Products</h3></div><div class="products-actions"><span class="products-count" id="productsCountLabel">Latest products</span><button class="primary" onclick="tab('products')">＋ &nbsp; Manage Products</button></div></div>
+  <div class="products-heading"><div><span class="products-cube">◆</span><h3>Products</h3></div><div class="products-actions"><span class="products-count" id="productsCountLabel">Latest products</span><span id="dashProducts" class="hidden">0</span><button class="primary" onclick="tab('products')">＋ &nbsp; Manage Products</button></div></div>
   <div class="tablewrap"><table class="dashboard-products-table"><thead><tr><th>#</th><th>Product Name</th><th>Price</th><th>Profit Rate</th><th>VIP Level</th><th>Special Task</th><th>Action</th></tr></thead><tbody id="dashProductsBody"><tr><td colspan="7">Loading products…</td></tr></tbody></table></div>
 </article>
 </section>
@@ -452,7 +452,7 @@ async function loadDashboard(){
   $('dashBalance').textContent=money(totalBalance);
   $('dashUsers').textContent=users.length.toLocaleString('en-US');
   $('dashIncome').textContent=money(totalIncome);
-  if($('productsCountLabel'))$('productsCountLabel').textContent=products.length.toLocaleString('en-US')+' configured products';
+  if($('productsCountLabel'))$('productsCountLabel').textContent=products.length.toLocaleString('en-US')+' configured products';if($('dashProducts'))$('dashProducts').textContent=products.length;
 
   const bounds=yangonMonthBounds();
   const monthTotals={deposit:{current:0,previous:0},withdrawal:{current:0,previous:0}};
