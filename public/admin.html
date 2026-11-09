@@ -243,12 +243,39 @@ body{min-width:320px}
  .sidebar-tagline{grid-column:2;grid-row:2;align-self:start;font-size:8px}
 }
 
+
+/* Signed-in administrator identity: role + display name */
+#app>header>.admin-identity{display:flex;align-items:center;gap:10px;flex:0 1 auto;min-width:148px;max-width:230px;margin-left:auto;margin-right:10px;padding:8px 12px;border:1px solid #e9edfb;border-radius:16px;background:linear-gradient(135deg,#fbfcff,#f3f5ff);box-shadow:0 4px 12px #28346b0a}
+.admin-avatar{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:50%;background:linear-gradient(145deg,#477cff,#2853df);color:#fff;font-size:17px;font-weight:800;box-shadow:0 4px 10px #3159e833}
+.admin-identity-meta{display:flex;flex-direction:column;gap:2px;min-width:0;line-height:1.15}
+.admin-identity-meta small{font-size:10px;font-weight:750;letter-spacing:.55px;text-transform:uppercase;color:#747d9b;white-space:nowrap}
+.admin-identity-meta strong{font-size:13px;font-weight:800;color:#171b3a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#app>header>button{flex:0 0 auto}
+@media(max-width:760px){
+ #app>header{gap:6px}
+ #app>header:before{width:min(34%,180px);font-size:10px;padding:0 9px;white-space:nowrap;overflow:hidden}
+ #app>header>.admin-identity{min-width:0;max-width:130px;margin:0;padding:5px 7px;gap:6px;border-radius:12px}
+ .admin-avatar{flex-basis:30px;width:30px;height:30px;font-size:14px}
+ .admin-identity-meta{gap:1px}
+ .admin-identity-meta small{font-size:8px;letter-spacing:.25px}
+ .admin-identity-meta strong{font-size:10px;max-width:76px}
+ #app>header>button{min-height:38px;padding:7px 9px;font-size:10px;border-radius:10px}
+}
+@media(max-width:380px){
+ #app>header:before{width:29%;font-size:9px}
+ #app>header>.admin-identity{gap:4px;padding:4px 5px}
+ .admin-avatar{flex-basis:27px;width:27px;height:27px;font-size:12px}
+ .admin-identity-meta small{font-size:7px}
+ .admin-identity-meta strong{font-size:9px;max-width:64px}
+ #app>header>button{padding:6px 7px;font-size:9px}
+}
+
 </style>
 </head>
 <body>
 <div id="login" class="card login"><div class="login-brand"><div class="login-crown" aria-hidden="true">👑</div><strong>Zonguru Admin</strong><span>Powerful &amp; Secure</span></div><h2>Admin Login</h2><div class="field"><label>Username</label><input id="lu" value="admin"></div><div class="field"><label>Password</label><input id="lp" type="password"></div><button class="primary" onclick="login()">Login</button><div id="loginMsg"></div></div>
 <div id="app" class="hidden">
-<header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><button class="secondary" onclick="logout()">Logout</button></header>
+<header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><div class="admin-identity" id="adminIdentity" aria-label="Signed-in administrator"><span class="admin-avatar" id="adminAvatar">O</span><span class="admin-identity-meta"><small id="adminRoleLabel">Main Admin</small><strong id="adminDisplayName">Owner</strong></span></div><button class="secondary" onclick="logout()">Logout</button></header>
 <nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button><button type="button" class="sidebar-logout" onclick="logout()">Logout</button><div class="sidebar-footer"><span class="sidebar-crown" aria-hidden="true">👑</span><strong>Zonguru Admin</strong><span class="sidebar-tagline">Powerful &amp; Secure</span></div></nav>
 <main>
 <section id="dashboard" class="dashboard-page hidden">
@@ -404,8 +431,15 @@ async function start(){
     const d=await api('/api/admin/me'); currentAdmin=d.admin||null;
     $('adminTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');$('platformTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');
     const secondAdminHeader=$('secondAdminHeader');if(secondAdminHeader)secondAdminHeader.classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');
+    const isMainAdmin=currentAdmin?.adminType==='superadmin';
+    const roleLabel=currentAdmin?.roleLabel||(isMainAdmin?'Main Admin':'Second Admin');
+    const displayName=currentAdmin?.displayName||(isMainAdmin?'Owner':String(currentAdmin?.username||'Second Admin'));
+    $('adminRoleLabel').textContent=roleLabel;
+    $('adminDisplayName').textContent=displayName;
+    $('adminAvatar').textContent=(displayName.trim().charAt(0)||'A').toUpperCase();
+    $('adminIdentity').title=roleLabel+' · '+displayName;
     const sub=document.querySelector('header .sub');
-    if(sub) sub.textContent=(currentAdmin?.adminType==='superadmin'?'Main Admin':'Second Admin')+' · '+(currentAdmin?.username||'');
+    if(sub) sub.textContent=roleLabel+' · '+displayName;
     $('login').classList.add('hidden');$('app').classList.remove('hidden');
     await tab('dashboard');
   }catch(e){throw Error('Login could not finish: '+(e.message||'admin session check failed'));}
