@@ -289,12 +289,28 @@ body{min-width:320px}
  .header-language select{min-width:74px;padding-left:5px;padding-right:15px;font-size:9px}
 }
 
+
+/* Keep the signed-in language picker visible in the top-right header.
+   The legacy header rule hides header divs, so explicitly restore this control. */
+#app>header>.header-language{display:flex!important;flex:0 0 auto;align-items:center;gap:7px;margin:0 0 0 auto!important;position:relative;z-index:3}
+#app>header>.header-language label{display:inline!important;font-size:11px;font-weight:700;color:#6c7390;white-space:nowrap}
+#app>header>.header-language select{display:block;min-width:112px;min-height:40px}
+#app>header>button{display:none!important}
+@media(max-width:700px){
+ #app>header>.header-language{gap:4px}
+ #app>header>.header-language label{font-size:9px}
+ #app>header>.header-language select{min-width:82px;min-height:36px;padding:6px 18px 6px 7px;font-size:10px}
+}
+@media(max-width:380px){
+ #app>header>.header-language select{min-width:74px;padding-left:5px;padding-right:14px;font-size:9px}
+}
+
 </style>
 </head>
 <body>
 <div id="login" class="card login"><div class="login-brand"><div class="login-crown" aria-hidden="true">👑</div><strong>Zonguru Admin</strong><span>Powerful &amp; Secure</span></div><div class="admin-language-control login-language"><label for="loginLanguageSelect">Language</label><select id="loginLanguageSelect" aria-label="Admin language" onchange="setAdminLanguage(this.value)"><option value="en">English</option><option value="zh">中文</option><option value="my">မြန်မာ</option></select></div><h2>Admin Login</h2><div class="field"><label>Username</label><input id="lu" value="admin"></div><div class="field"><label>Password</label><input id="lp" type="password"></div><button class="primary" onclick="login()">Login</button><div id="loginMsg"></div></div>
 <div id="app" class="hidden">
-<header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><div class="admin-identity" id="adminIdentity" aria-label="Signed-in administrator"><span class="admin-avatar" id="adminAvatar">O</span><span class="admin-identity-meta"><small id="adminRoleLabel">Main Admin</small><strong id="adminDisplayName">Owner</strong></span></div><div class="admin-language-control header-language"><label class="sr-only" for="headerLanguageSelect">Language</label><select id="headerLanguageSelect" aria-label="Admin language" onchange="setAdminLanguage(this.value)"><option value="en">English</option><option value="zh">中文</option><option value="my">မြန်မာ</option></select></div><button class="secondary" onclick="logout()">Logout</button></header>
+<header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><div class="admin-identity" id="adminIdentity" aria-label="Signed-in administrator"><span class="admin-avatar" id="adminAvatar">O</span><span class="admin-identity-meta"><small id="adminRoleLabel">Main Admin</small><strong id="adminDisplayName">Owner</strong></span></div><div class="admin-language-control header-language"><label for="headerLanguageSelect">Language</label><select id="headerLanguageSelect" aria-label="Admin language" onchange="setAdminLanguage(this.value)"><option value="en">English</option><option value="zh">中文</option><option value="my">မြန်မာ</option></select></div></header>
 <nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button><button type="button" class="sidebar-logout" onclick="logout()">Logout</button><div class="sidebar-footer"><span class="sidebar-crown" aria-hidden="true">👑</span><strong>Zonguru Admin</strong><span class="sidebar-tagline">Powerful &amp; Secure</span></div></nav>
 <main>
 <section id="dashboard" class="dashboard-page hidden">
