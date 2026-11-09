@@ -399,13 +399,17 @@ app.post('/api/admin/login', async (req, res) => {
 });
 
 app.get('/api/admin/me', auth, async (req, res) => {
+  const adminType = req.admin.adminType || 'superadmin';
+  const isMainAdmin = adminType === 'superadmin';
   res.json({
     success: true,
     admin: {
       id: req.admin.id,
       username: req.admin.username,
       role: req.admin.role,
-      adminType: req.admin.adminType || 'superadmin'
+      adminType,
+      roleLabel: isMainAdmin ? 'Main Admin' : 'Second Admin',
+      displayName: isMainAdmin ? 'Owner' : String(req.admin.username || 'Second Admin')
     }
   });
 });
