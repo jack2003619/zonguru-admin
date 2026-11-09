@@ -385,7 +385,7 @@ function initAdminCurrencyConverter(){
 }
 
 const $=id=>document.getElementById(id);
-const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
+const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);const dashboardMoney=n=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
 async function api(path,opt={}){opt.headers=opt.headers||{};opt.headers['Content-Type']='application/json';if(token)opt.headers.Authorization='Bearer '+token;const r=await fetch(API+path,opt);const d=await r.json().catch(()=>({}));if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
 async function login(){
   const button=$('login').querySelector('button');
@@ -449,9 +449,9 @@ async function loadDashboard(){
   const tx=txResult.transactions||[];
   const totalBalance=users.reduce((sum,u)=>sum+Number(u.balances?.USDT??u.balance??0),0);
   const totalIncome=users.reduce((sum,u)=>sum+Number(u.totalProfit||0),0);
-  $('dashBalance').textContent=money(totalBalance);
+  $('dashBalance').textContent=dashboardMoney(totalBalance);
   $('dashUsers').textContent=users.length.toLocaleString('en-US');
-  $('dashIncome').textContent=money(totalIncome);
+  $('dashIncome').textContent=dashboardMoney(totalIncome);
   if($('productsCountLabel'))$('productsCountLabel').textContent=products.length.toLocaleString('en-US')+' configured products';if($('dashProducts'))$('dashProducts').textContent=products.length;
 
   const bounds=yangonMonthBounds();
@@ -481,15 +481,15 @@ async function loadDashboard(){
    else if(created>=bounds.previousStart&&created<bounds.currentStart)monthTotals[key].previous+=amount;
    if(isDeposit)approvedDeposits.push({created,amount});
   }
-  $('dashDeposits').textContent=money(dep);
-  $('dashWithdrawals').textContent=money(wd);
+  $('dashDeposits').textContent=dashboardMoney(dep);
+  $('dashWithdrawals').textContent=dashboardMoney(wd);
   setDashboardTrend('dashDepositsTrend',monthTotals.deposit.current,monthTotals.deposit.previous);
   setDashboardTrend('dashWithdrawalsTrend',monthTotals.withdrawal.current,monthTotals.withdrawal.previous);
 
   try{
    const incomeTrend=await api('/api/admin/dashboard/income');
    setDashboardTrend('dashIncomeTrend',incomeTrend.currentMonthIncomeUSDT,incomeTrend.previousMonthIncomeUSDT);
-   $('dashIncomeTrend').title='Compared with the previous month';
+   $('dashIncomeTrend').title=Number(incomeTrend.estimatedLegacyOrders||0)>0?'Compared with the previous month; older orders without saved USDT commission are estimated using the user currency currently on file.':'Compared with the previous month';
   }catch(incomeError){
    const key='zonguru_admin_income_snapshot_'+String(currentAdmin?.id||'admin');
    const previous=Number(localStorage.getItem(key));
