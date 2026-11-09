@@ -447,6 +447,8 @@ async function loadDashboard(){
   ]);
   users=userResult.users||[];products=productResult.products||[];
   const tx=txResult.transactions||[];
+  let financialSummary=null;
+  try{financialSummary=await api('/api/admin/dashboard/income')}catch(summaryError){console.info('Dashboard summary endpoint not deployed yet; using available transaction records for the preview')}
   const totalBalance=users.reduce((sum,u)=>sum+Number(u.balances?.USDT??u.balance??0),0);
   const totalIncome=users.reduce((sum,u)=>sum+Number(u.totalProfit||0),0);
   $('dashBalance').textContent=dashboardMoney(totalBalance);
@@ -481,16 +483,23 @@ async function loadDashboard(){
    else if(created>=bounds.previousStart&&created<bounds.currentStart)monthTotals[key].previous+=amount;
    if(isDeposit)approvedDeposits.push({created,amount});
   }
+  if(financialSummary){
+   dep=Number(financialSummary.totalDepositUSDT??dep);
+   wd=Number(financialSummary.totalWithdrawalUSDT??wd);
+   monthTotals.deposit.current=Number(financialSummary.currentMonthDepositUSDT??monthTotals.deposit.current);
+   monthTotals.deposit.previous=Number(financialSummary.previousMonthDepositUSDT??monthTotals.deposit.previous);
+   monthTotals.withdrawal.current=Number(financialSummary.currentMonthWithdrawalUSDT??monthTotals.withdrawal.current);
+   monthTotals.withdrawal.previous=Number(financialSummary.previousMonthWithdrawalUSDT??monthTotals.withdrawal.previous);
+  }
   $('dashDeposits').textContent=dashboardMoney(dep);
   $('dashWithdrawals').textContent=dashboardMoney(wd);
   setDashboardTrend('dashDepositsTrend',monthTotals.deposit.current,monthTotals.deposit.previous);
   setDashboardTrend('dashWithdrawalsTrend',monthTotals.withdrawal.current,monthTotals.withdrawal.previous);
 
-  try{
-   const incomeTrend=await api('/api/admin/dashboard/income');
-   setDashboardTrend('dashIncomeTrend',incomeTrend.currentMonthIncomeUSDT,incomeTrend.previousMonthIncomeUSDT);
-   $('dashIncomeTrend').title=Number(incomeTrend.estimatedLegacyOrders||0)>0?'Compared with the previous month; older orders without saved USDT commission are estimated using the user currency currently on file.':'Compared with the previous month';
-  }catch(incomeError){
+  if(financialSummary){
+   setDashboardTrend('dashIncomeTrend',financialSummary.currentMonthIncomeUSDT,financialSummary.previousMonthIncomeUSDT);
+   $('dashIncomeTrend').title=Number(financialSummary.estimatedLegacyOrders||0)>0?'Compared with the previous month; older orders without saved USDT commission are estimated using the user currency currently on file.':'Compared with the previous month';
+  }else{
    const key='zonguru_admin_income_snapshot_'+String(currentAdmin?.id||'admin');
    const previous=Number(localStorage.getItem(key));
    if(Number.isFinite(previous)&&previous>0){
@@ -511,6 +520,13 @@ async function loadDashboard(){
   for(const item of approvedDeposits){
    const day=days.find(v=>v.date.toDateString()===item.created.toDateString());
    if(day)day.value+=item.amount;
+  }
+  if(Array.isArray(financialSummary?.dailyDeposits)){
+   days.forEach(day=>day.value=0);
+   for(const row of financialSummary.dailyDeposits){
+    const day=days.find(v=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Yangon'}).format(v.date)===row.day);
+    if(day)day.value=Number(row.amountUSDT||0);
+   }
   }
   const max=Math.max(1,...days.map(v=>v.value));
   const pts=days.map((v,i)=>({x:25+i*55,y:140-v.value/max*105}));
