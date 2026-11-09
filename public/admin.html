@@ -513,7 +513,7 @@ async function loadDashboard(){
    const image=p.imageUrl||p.image||p.thumbnail||'';
    const img=image?'<img src="'+esc(image)+'" alt="" style="width:42px;height:42px;object-fit:contain;border-radius:10px;background:#f5f6fb">':'<span style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#f5f6fb;color:#8790b0">▣</span>';
    const special=p.specialTask?'Task '+esc(p.specialTaskNumber??'—')+' · '+money(p.specialRequiredAmount)+' · '+esc(p.specialCommissionMultiplier??'—')+'x':'Off';
-   return '<tr><td>'+(i+1)+'</td><td><div style="display:flex;align-items:center;gap:10px">'+img+'<b>'+esc(p.name||p.title||'—')+'</b></div></td><td>'+money(p.price)+'</td><td>'+esc(p.profitRate??0)+'</td><td>VIP '+esc(p.requiredVip??0)+'</td><td>'+special+'</td><td><button class="secondary" onclick="tab(\\'products\\')">Manage</button></td></tr>';
+   return '<tr><td>'+(i+1)+'</td><td><div style="display:flex;align-items:center;gap:10px">'+img+'<b>'+esc(p.name||p.title||'—')+'</b></div></td><td>'+money(p.price)+'</td><td>'+esc(p.profitRate??0)+'</td><td>VIP '+esc(p.requiredVip??0)+'</td><td>'+special+'</td><td><button class="secondary" onclick="tab(&quot;products&quot;)">Manage</button></td></tr>';
   }).join('')||'<tr><td colspan="7">No products configured</td></tr>';
  }catch(e){
   console.error('Dashboard load failed',e);
