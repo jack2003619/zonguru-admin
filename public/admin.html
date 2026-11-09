@@ -126,26 +126,143 @@ body{background:linear-gradient(135deg,#f1f2ff 0%,#f8f9ff 58%,#eff1ff 100%);colo
 @media(max-width:1050px){#app{grid-template-columns:205px minmax(0,1fr);padding:10px}.dash-grid{grid-template-columns:1.25fr 1fr;grid-template-rows:170px 170px 170px}.balance-card{grid-column:1;grid-row:1/3}.users-card{grid-column:2;grid-row:1}.earnings-card{grid-column:2;grid-row:2}.deposits-card{grid-column:1;grid-row:3}.withdrawals-card{grid-column:2;grid-row:3}}
 @media(max-width:700px){#app{grid-template-columns:70px minmax(0,1fr);grid-template-rows:66px minmax(0,1fr);padding:6px}#app>.tabs{top:6px;height:calc(100vh - 12px);min-height:0;padding:10px 5px;border-radius:14px}#app>.tabs button{width:60px;padding:0 2px 0 2px;text-align:center;font-size:8px}#app>.tabs button:before{left:0;right:0;top:0;width:100%;height:25px}#app>.sidebar-brand{justify-content:center;padding:0;font-size:0}#app>header{height:66px;padding:0 9px;border-radius:14px 14px 0 0}#app>header:before{left:8px;top:12px;width:48%;height:40px;font-size:10px;padding:0 10px}#app>header>button{font-size:10px;padding:9px 12px}#app>main{padding:12px 6px}#app>main>.card{padding:13px}.dash-grid{grid-template-columns:1fr 1fr;grid-template-rows:auto;gap:8px}.dash-card{padding:12px;border-radius:14px;min-height:130px}.balance-card{grid-column:1/-1;grid-row:auto}.users-card,.earnings-card,.deposits-card,.withdrawals-card{grid-column:auto;grid-row:auto}.dash-number{font-size:22px}.users-card .dash-number{font-size:24px}.dash-chart{height:155px}.products-panel{padding:12px}.products-heading h3{font-size:17px}.products-actions{gap:5px}.products-count{display:none}.products-actions button{padding:9px;font-size:10px}}
 
+
+/* Premium Zonguru identity, trend indicators and accessible responsive controls */
+body{min-width:320px}
+#app>.tabs{display:flex;flex-direction:column;align-items:stretch}
+#app>.tabs button{min-height:46px;font-size:14px;font-weight:600;letter-spacing:.05px;transition:background .18s ease,transform .18s ease,box-shadow .18s ease}
+#app>.tabs button:active{transform:scale(.985)}
+#app>.tabs button.active{background:linear-gradient(110deg,#7628f4 0%,#3159e8 100%);box-shadow:0 8px 18px #5128d94a}
+#app>.tabs button.sidebar-logout{margin-top:6px;background:#ffffff12;border:1px solid #ffffff1c;color:#e4e8fa}
+#app>.tabs button.sidebar-logout:before{content:"⇥"}
+#app>.tabs button.sidebar-logout:hover{background:#ffffff20;color:#fff}
+.sidebar-footer{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;flex:0 0 auto;min-height:126px;margin-top:auto;padding:13px 10px;border:1px solid #ffffff16;border-radius:17px;background:linear-gradient(145deg,#6424d5 0%,#32117e 68%,#211454 100%);box-shadow:0 10px 24px #120b3e66;text-align:center;color:#fff;position:relative;overflow:hidden}
+.sidebar-footer:after{content:"";position:absolute;width:180px;height:70px;right:-70px;bottom:-40px;transform:rotate(-18deg);border-radius:50%;background:#a66cff25}
+.sidebar-crown{font-size:27px;line-height:1.1;filter:drop-shadow(0 3px 5px #150b4b55)}
+.sidebar-footer strong{font-size:14px;font-weight:800;color:#fff;z-index:1}
+.sidebar-tagline{font-size:12px;color:#e2d9ff;z-index:1}
+.login{width:min(450px,calc(100vw - 32px));max-width:450px;margin:clamp(28px,9vh,100px) auto;padding:30px 30px 28px;border:1px solid #ebe8ff;border-radius:24px;background:rgba(255,255,255,.98);box-shadow:0 24px 70px #29215a1a}
+.login-brand{display:flex;flex-direction:column;align-items:center;gap:5px;margin:0 0 20px;padding:4px 0 17px;border-bottom:1px solid #f0edfb;text-align:center}
+.login-crown{display:grid;place-items:center;width:62px;height:62px;margin-bottom:5px;border-radius:19px;background:linear-gradient(145deg,#fff3c4,#ffdc7a);box-shadow:0 8px 20px #d6a83c30;font-size:34px}
+.login-brand strong{font-size:24px;letter-spacing:-.5px;color:#1b1a3c;font-weight:850}
+.login-brand>span{font-size:13px;letter-spacing:1.1px;text-transform:uppercase;color:#7650c7;font-weight:750}
+.login h2{text-align:center;color:#34305b;font-size:17px;font-weight:750;margin:0 0 18px}
+.login .field{margin:13px 0}
+.login .field label{display:block;margin-bottom:7px;color:#505675;font-size:13px;font-weight:650}
+.login input{width:100%;min-height:48px;padding:12px 14px;border:1px solid #e2e5f2;border-radius:12px;background:#fafbff;color:#202443;font-size:15px;outline:none}
+.login input:focus{border-color:#7950e7;box-shadow:0 0 0 3px #7950e71c}
+.login button{width:100%;min-height:50px;margin-top:12px;border:0;border-radius:13px;background:linear-gradient(105deg,#7026ed,#3159e8);color:#fff;font-size:15px;font-weight:750;box-shadow:0 10px 22px #5a35d52b}
+#app button{min-height:40px;border-radius:11px;font-size:13px;font-weight:650;padding:9px 13px}
+#app input,#app select,#app textarea{min-height:42px;padding:10px 12px;border-radius:10px;font-size:14px}
+#app textarea{min-height:88px}
+#app>header>button{min-height:44px;padding:10px 18px;font-size:13px;border-radius:13px}
+.dash-metric-row{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;flex-wrap:wrap}
+.dash-metric-row .dash-number{min-width:0;flex:1 1 auto}
+.trend-badge{display:inline-flex;align-items:center;justify-content:center;gap:4px;flex:0 0 auto;min-height:27px;padding:5px 9px;border-radius:999px;background:#e4f8ed;border:1px solid #d1f1df;color:#07864e;font-size:12px;line-height:1;font-weight:800;white-space:nowrap}
+.trend-badge[data-trend="down"]{background:#fff0f1;border-color:#ffdcdf;color:#d13b50}
+.trend-badge[data-trend="flat"]{background:#f1f2f8;border-color:#e6e8f1;color:#727994}
+.trend-arrow{font-size:14px;font-weight:900;line-height:1}
+.dash-change{margin-top:6px;font-size:12px}
+.earnings-card .dash-number,.deposits-card .dash-number,.withdrawals-card .dash-number{font-size:clamp(23px,2.2vw,32px)}
+.products-actions button{min-height:42px!important}
+@media(max-width:1050px) and (min-width:761px){
+ #app{grid-template-columns:210px minmax(0,1fr);padding:10px}
+ #app>.tabs{padding:14px 10px;gap:6px}
+ #app>.tabs button{font-size:13px;padding-left:49px}
+ #app>main{padding:18px 12px}
+ .sidebar-footer{min-height:112px}
+ .dash-card{padding:16px}
+ .dash-number{font-size:29px}
+}
+@media(max-width:760px){
+ body{min-width:320px;background:#f3f4ff}
+ #app{display:flex;flex-direction:column;gap:8px;min-height:100vh;padding:8px}
+ #app>header{position:sticky;top:0;z-index:30;width:100%;height:62px;min-height:62px;flex:0 0 62px;padding:0 10px;border:1px solid #eef0fa;border-radius:15px;background:#fff;box-shadow:0 5px 16px #25316b10}
+ #app>header:before{left:10px;top:10px;width:min(48%,260px);height:40px;padding:0 12px;border-radius:12px;font-size:11px;display:flex;align-items:center}
+ #app>header>button{min-height:42px;padding:8px 12px;font-size:12px;border-radius:11px}
+ #app>.tabs{position:sticky;top:68px;z-index:25;width:100%;height:auto;min-height:0;max-height:86px;flex:0 0 auto;display:flex;flex-direction:row;align-items:center;gap:6px;overflow-x:auto;overflow-y:hidden;padding:7px;border-radius:14px;background:linear-gradient(110deg,#10152c,#1b1741);scrollbar-width:thin;scrollbar-color:#6e54ce #151a33}
+ .sidebar-brand{height:52px;min-height:52px;width:auto;min-width:104px;flex:0 0 auto;justify-content:flex-start;gap:7px;margin:0;padding:0 7px;font-size:14px}
+ .brand-mark{width:32px;height:32px;min-width:32px;border-radius:10px;font-size:20px}
+ #app>.tabs button{width:auto;min-width:94px;max-width:140px;height:52px;min-height:52px;flex:0 0 auto;padding:27px 9px 5px;text-align:center;white-space:nowrap;overflow:visible;text-overflow:clip;border-radius:10px;font-size:11px;line-height:1.05}
+ #app>.tabs button:before{top:3px;left:0;right:0;width:100%;height:22px;font-size:16px;line-height:20px}
+ #app>.tabs button.sidebar-logout{min-width:82px;margin-top:0;padding-top:27px}
+ #app>.tabs button.sidebar-logout:before{top:3px}
+ .sidebar-footer{width:150px;min-width:150px;height:52px;min-height:52px;flex:0 0 150px;flex-direction:row;justify-content:center;gap:6px;margin:0;padding:5px 8px;border-radius:11px}
+ .sidebar-footer:after{width:90px;height:42px;right:-36px;bottom:-22px}
+ .sidebar-crown{font-size:22px}
+ .sidebar-footer strong{font-size:10px;white-space:nowrap}
+ .sidebar-tagline{font-size:8px;white-space:nowrap}
+ #app>main{width:100%;min-width:0;max-width:none;margin:0;padding:7px 0 18px;background:transparent;border-radius:0}
+ #app>main>.card{padding:13px;border-radius:14px}
+ #app button{min-height:44px;padding:10px 12px;font-size:12px}
+ #app input,#app select,#app textarea{min-height:46px;font-size:14px}
+ .dash-grid{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:auto;gap:9px}
+ .dash-card{min-width:0;min-height:142px;padding:14px 12px;border-radius:15px}
+ .balance-card{grid-column:1/-1;grid-row:auto;min-height:250px}
+ .users-card,.earnings-card,.deposits-card,.withdrawals-card{grid-column:auto;grid-row:auto}
+ .dash-heading{gap:7px;font-size:12px}
+ .dash-symbol{width:27px;height:27px;font-size:16px}
+ .dash-number,.users-card .dash-number{font-size:clamp(20px,5vw,27px);letter-spacing:-.4px}
+ .earnings-card .dash-number,.deposits-card .dash-number,.withdrawals-card .dash-number{font-size:clamp(18px,4.4vw,24px)}
+ .trend-badge{min-height:24px;padding:4px 6px;font-size:10px}
+ .trend-arrow{font-size:12px}
+ .dash-change{font-size:10px;line-height:1.35}
+ .dash-chart{height:165px;margin-top:12px}
+ .products-panel{padding:12px;border-radius:15px}
+ .products-heading{align-items:flex-start;flex-wrap:wrap}
+ .products-heading h3{font-size:17px}
+ .products-actions{gap:6px}
+ .products-count{display:inline;font-size:10px}
+ .products-actions button{min-height:42px!important;padding:8px 10px;font-size:11px}
+ .dashboard-products-table{min-width:700px}
+ .login{width:calc(100vw - 28px);max-width:440px;margin:clamp(22px,7vh,70px) auto;padding:24px 20px;border-radius:20px}
+ .login-crown{width:56px;height:56px;font-size:30px}
+ .login-brand strong{font-size:22px}
+ .login input{min-height:48px}
+ .login button{min-height:50px}
+}
+@media(max-width:390px){
+ #app{padding:6px;gap:6px}
+ #app>.tabs{gap:5px;padding:6px}
+ .sidebar-brand{min-width:90px;font-size:12px}
+ #app>.tabs button{min-width:86px;padding-left:7px;padding-right:7px;font-size:10px}
+ .sidebar-footer{min-width:136px;flex-basis:136px}
+ .sidebar-footer strong{font-size:9px}
+ .sidebar-tagline{font-size:7px}
+ .dash-card{padding:11px 9px}
+ .trend-badge{padding:4px 5px;font-size:9px}
+ .dash-metric-row{gap:5px}
+ .products-count{display:none}
+}
+
+
+@media(max-width:760px){
+ .sidebar-footer{display:grid;grid-template-columns:27px minmax(0,1fr);grid-template-rows:1fr 1fr;align-items:center;justify-items:start;column-gap:5px;row-gap:0;text-align:left}
+ .sidebar-crown{grid-column:1;grid-row:1/3;justify-self:center}
+ .sidebar-footer strong{grid-column:2;grid-row:1;align-self:end;font-size:10px}
+ .sidebar-tagline{grid-column:2;grid-row:2;align-self:start;font-size:8px}
+}
+
 </style>
 </head>
 <body>
-<div id="login" class="card login"><h2>Zonguru Admin</h2><div class="field"><label>Username</label><input id="lu" value="admin"></div><div class="field"><label>Password</label><input id="lp" type="password"></div><button class="primary" onclick="login()">Login</button><div id="loginMsg"></div></div>
+<div id="login" class="card login"><div class="login-brand"><div class="login-crown" aria-hidden="true">👑</div><strong>Zonguru Admin</strong><span>Powerful &amp; Secure</span></div><h2>Admin Login</h2><div class="field"><label>Username</label><input id="lu" value="admin"></div><div class="field"><label>Password</label><input id="lp" type="password"></div><button class="primary" onclick="login()">Login</button><div id="loginMsg"></div></div>
 <div id="app" class="hidden">
 <header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><button class="secondary" onclick="logout()">Logout</button></header>
-<nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button></nav>
+<nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button><button type="button" class="sidebar-logout" onclick="logout()">Logout</button><div class="sidebar-footer"><span class="sidebar-crown" aria-hidden="true">👑</span><strong>Zonguru Admin</strong><span class="sidebar-tagline">Powerful &amp; Secure</span></div></nav>
 <main>
 <section id="dashboard" class="dashboard-page hidden">
 <div class="dashboard-top">
   <div class="dash-grid">
     <article class="dash-card balance-card"><div class="dash-heading"><span class="dash-symbol">▥</span><span>Total Balance</span></div><div class="dash-number" id="dashBalance">—</div><div class="dash-change">USDT · Current visible user balances</div><div id="dashChart" class="dash-chart"></div></article>
     <article class="dash-card users-card"><div class="dash-heading"><span class="dash-symbol">♟</span><span>Total Users</span></div><div class="dash-number" id="dashUsers">—</div><div class="dash-change">Registered accounts</div><span class="dash-watermark">♟</span></article>
-    <article class="dash-card earnings-card"><div class="dash-heading"><span class="dash-symbol">▣</span><span>Total Products</span></div><div class="dash-number" id="dashProducts">—</div><div class="dash-change">Configured product pool</div></article>
-    <article class="dash-card deposits-card"><div class="dash-heading"><span class="dash-symbol">↓</span><span>Total Deposit</span></div><div class="dash-number" id="dashDeposits">—</div><div class="dash-change">Approved · USDT equivalent</div></article>
-    <article class="dash-card withdrawals-card"><div class="dash-heading"><span class="dash-symbol">↑</span><span>Total Withdrawal</span></div><div class="dash-number" id="dashWithdrawals">—</div><div class="dash-change">Approved · USDT equivalent</div></article>
+    <article class="dash-card earnings-card"><div class="dash-heading"><span class="dash-symbol">＄</span><span>Total Income</span></div><div class="dash-metric-row"><div class="dash-number" id="dashIncome">—</div><span id="dashIncomeTrend" class="trend-badge" data-trend="flat"><span class="trend-arrow">→</span><span>—</span></span></div><div class="dash-change">USDT · vs last month</div></article>
+    <article class="dash-card deposits-card"><div class="dash-heading"><span class="dash-symbol">↓</span><span>Total Deposit</span></div><div class="dash-metric-row"><div class="dash-number" id="dashDeposits">—</div><span id="dashDepositsTrend" class="trend-badge" data-trend="flat"><span class="trend-arrow">→</span><span>—</span></span></div><div class="dash-change">Approved · vs last month</div></article>
+    <article class="dash-card withdrawals-card"><div class="dash-heading"><span class="dash-symbol">↑</span><span>Total Withdrawal</span></div><div class="dash-metric-row"><div class="dash-number" id="dashWithdrawals">—</div><span id="dashWithdrawalsTrend" class="trend-badge" data-trend="flat"><span class="trend-arrow">→</span><span>—</span></span></div><div class="dash-change">Approved · vs last month</div></article>
   </div>
 </div>
 <article class="products-panel">
-  <div class="products-heading"><div><span class="products-cube">◆</span><h3>Products</h3></div><div class="products-actions"><span class="products-count">Latest products</span><button class="primary" onclick="tab('products')">＋ &nbsp; Manage Products</button></div></div>
+  <div class="products-heading"><div><span class="products-cube">◆</span><h3>Products</h3></div><div class="products-actions"><span class="products-count" id="productsCountLabel">Latest products</span><span id="dashProducts" class="hidden">0</span><button class="primary" onclick="tab('products')">＋ &nbsp; Manage Products</button></div></div>
   <div class="tablewrap"><table class="dashboard-products-table"><thead><tr><th>#</th><th>Product Name</th><th>Price</th><th>Profit Rate</th><th>VIP Level</th><th>Special Task</th><th>Action</th></tr></thead><tbody id="dashProductsBody"><tr><td colspan="7">Loading products…</td></tr></tbody></table></div>
 </article>
 </section>
@@ -268,7 +385,7 @@ function initAdminCurrencyConverter(){
 }
 
 const $=id=>document.getElementById(id);
-const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
+const uid=u=>String(u?._id||u?.id||u||'');const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));const money=n=>Number(n||0).toFixed(2);const dashboardMoney=n=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});function msg(el,s,ok=false){$(el).innerHTML='<div class="notice '+(ok?'ok':'bad')+'">'+esc(s)+'</div>'}
 async function api(path,opt={}){opt.headers=opt.headers||{};opt.headers['Content-Type']='application/json';if(token)opt.headers.Authorization='Bearer '+token;const r=await fetch(API+path,opt);const d=await r.json().catch(()=>({}));if(!r.ok||d.success===false)throw Error(d.message||'Request failed');return d}
 async function login(){
   const button=$('login').querySelector('button');
@@ -299,15 +416,136 @@ function tab(t){
   if(t==='dashboard')loadDashboard();if(t==='users')loadUsers();if(t==='bonuses'){populateBonusRecipients();loadBonuses();}if(t==='announcements')loadAnnouncements();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();}if(t==='eventsSettings')loadEventsContent();if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
 }
 
+function setDashboardTrend(id,current,previous){
+ const el=$(id);if(!el)return;
+ const c=Number(current||0),p=Number(previous||0);
+ if(!Number.isFinite(c)||!Number.isFinite(p)){el.dataset.trend='flat';el.innerHTML='<span class="trend-arrow">—</span><span>—</span>';return}
+ let direction='flat',label='0.0%';
+ if(p>0){const pct=((c-p)/p)*100;direction=pct>0?'up':pct<0?'down':'flat';label=(pct>0?'+':'')+pct.toFixed(1)+'%'}
+ else if(c>0){direction='up';label='NEW'}
+ el.dataset.trend=direction;
+ el.innerHTML='<span class="trend-arrow">'+(direction==='up'?'↑':direction==='down'?'↓':'→')+'</span><span>'+label+'</span>';
+}
+function setDashboardTrendUnavailable(id){
+ const el=$(id);if(!el)return;
+ el.dataset.trend='flat';el.innerHTML='<span class="trend-arrow">—</span><span>—</span>';
+}
+function yangonMonthBounds(now=new Date()){
+ const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Yangon',year:'numeric',month:'2-digit'}).formatToParts(now);
+ const p=Object.fromEntries(parts.map(x=>[x.type,x.value]));
+ const y=Number(p.year),m=Number(p.month),offset=390*60000;
+ return {
+  previousStart:new Date(Date.UTC(y,m-2,1)-offset),
+  currentStart:new Date(Date.UTC(y,m-1,1)-offset),
+  nextStart:new Date(Date.UTC(y,m,1)-offset)
+ };
+}
 async function loadDashboard(){
-try{const r=await Promise.all([api('/api/admin/users'),api('/api/admin/transactions'),api('/api/admin/products')]);users=r[0].users||[];products=r[2].products||[];const tx=r[1].transactions||[];
-const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);days.push({date:d,label:d.toLocaleDateString('en',{weekday:'short'}),value:0})}
-for(const x of tx){if(String(x.status).toLowerCase()!=='approved'||String(x.type).toLowerCase()!=='deposit')continue;const d=new Date(x.createdAt||x.updatedAt||x.date||0);const day=days.find(v=>v.date.toDateString()===d.toDateString());if(day){const n=Number(x.convertedAmountUSDT);day.value+=Number.isFinite(n)&&x.convertedAmountUSDT!=null?n:usdtValue(x.amount,x.currency)}}
-const max=Math.max(1,...days.map(v=>v.value));const pts=days.map((v,i)=>({x:25+i*55,y:140-v.value/max*105}));const path=pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ');
-$('dashChart').innerHTML='<svg viewBox="0 0 420 170" style="width:100%;height:100%" aria-label="Approved deposits for the last seven days">'+[35,70,105,140].map(y=>'<line x1="15" y1="'+y+'" x2="405" y2="'+y+'" stroke="#e9ecf7" stroke-dasharray="3 4"/>').join('')+'<path d="'+path+' L355 140 L25 140 Z" fill="#6338ed" opacity=".12"/><path d="'+path+'" fill="none" stroke="#6338ed" stroke-width="3" stroke-linecap="round"/>'+pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#6338ed"/>').join('')+days.map((v,i)=>'<text x="'+pts[i].x+'" y="162" text-anchor="middle" font-size="10" fill="#68708d">'+v.label+'</text>').join('')+'</svg>';$('dashBalance').textContent=money(users.reduce((n,u)=>n+Number(u.balances?.USDT??u.balance??0),0));$('dashUsers').textContent=users.length;$('dashProducts').textContent=products.length;
-let dep=0,wd=0;for(const x of tx){if(String(x.status).toLowerCase()!=='approved')continue;const v=Number(x.convertedAmountUSDT);if(String(x.type).toLowerCase()==='deposit')dep+=Number.isFinite(v)&&x.convertedAmountUSDT!=null?v:usdtValue(x.amount,x.currency);if(['withdraw','withdrawal'].includes(String(x.type).toLowerCase()))wd+=Number(x.debitedAmount)>0?usdtValue(x.debitedAmount,x.debitedCurrency||x.currency||'USDT'):usdtValue(x.amount,x.currency)}
- $('dashDeposits').textContent=money(dep);$('dashWithdrawals').textContent=money(wd);$('dashProductsBody').innerHTML=products.slice(0,10).map((p,i)=>{const image=p.imageUrl||p.image||p.thumbnail||'';const img=image?'<img src="'+esc(image)+'" alt="" style="width:42px;height:42px;object-fit:contain;border-radius:10px;background:#f5f6fb">':'<span style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#f5f6fb;color:#8790b0">▣</span>';const special=p.specialTask?'Task '+esc(p.specialTaskNumber??'—')+' · '+money(p.specialRequiredAmount)+' · '+esc(p.specialCommissionMultiplier??'—')+'x':'Off';return '<tr><td>'+(i+1)+'</td><td><div style="display:flex;align-items:center;gap:10px">'+img+'<b>'+esc(p.name||p.title||'—')+'</b></div></td><td>'+money(p.price)+'</td><td>'+esc(p.profitRate??0)+'</td><td>VIP '+esc(p.requiredVip??0)+'</td><td>'+special+'</td><td><button class="secondary" onclick="tab(&quot;products&quot;)">Manage</button></td></tr>'}).join('')||'<tr><td colspan="7">No products configured</td></tr>';
-}catch(e){console.error('Dashboard load failed',e)}}function populateBonusRecipients(){
+ try{
+  const [userResult,txResult,productResult]=await Promise.all([
+   api('/api/admin/users'),api('/api/admin/transactions'),api('/api/admin/products')
+  ]);
+  users=userResult.users||[];products=productResult.products||[];
+  const tx=txResult.transactions||[];
+  let financialSummary=null;
+  try{financialSummary=await api('/api/admin/dashboard/income')}catch(summaryError){console.info('Dashboard summary endpoint not deployed yet; using available transaction records for the preview')}
+  const totalBalance=users.reduce((sum,u)=>sum+Number(u.balances?.USDT??u.balance??0),0);
+  const totalIncome=users.reduce((sum,u)=>sum+Number(u.totalProfit||0),0);
+  $('dashBalance').textContent=dashboardMoney(totalBalance);
+  $('dashUsers').textContent=users.length.toLocaleString('en-US');
+  $('dashIncome').textContent=dashboardMoney(totalIncome);
+  if($('productsCountLabel'))$('productsCountLabel').textContent=products.length.toLocaleString('en-US')+' configured products';if($('dashProducts'))$('dashProducts').textContent=products.length;
+
+  const bounds=yangonMonthBounds();
+  const monthTotals={deposit:{current:0,previous:0},withdrawal:{current:0,previous:0}};
+  let dep=0,wd=0;
+  const approvedDeposits=[];
+  for(const x of tx){
+   if(String(x.status||'').toLowerCase()!=='approved')continue;
+   const type=String(x.type||'').toLowerCase();
+   const isDeposit=type==='deposit';
+   const isWithdrawal=type==='withdrawal'||type==='withdraw';
+   if(!isDeposit&&!isWithdrawal)continue;
+   let amount=0;
+   if(isDeposit){
+    const converted=Number(x.convertedAmountUSDT);
+    amount=Number.isFinite(converted)&&x.convertedAmountUSDT!==null&&x.convertedAmountUSDT!==undefined?converted:usdtValue(x.amount,x.currency);
+    dep+=amount;
+   }else{
+    const debit=Number(x.debitedAmount);
+    amount=debit>0?usdtValue(debit,x.debitedCurrency||'USDT'):((Number.isFinite(Number(x.convertedAmountUSDT))&&x.convertedAmountUSDT!==null&&x.convertedAmountUSDT!==undefined)?Number(x.convertedAmountUSDT):usdtValue(x.amount,x.currency));
+    wd+=amount;
+   }
+   const created=new Date(x.createdAt||x.updatedAt||x.date||0);
+   if(!Number.isFinite(created.getTime()))continue;
+   const key=isDeposit?'deposit':'withdrawal';
+   if(created>=bounds.currentStart&&created<bounds.nextStart)monthTotals[key].current+=amount;
+   else if(created>=bounds.previousStart&&created<bounds.currentStart)monthTotals[key].previous+=amount;
+   if(isDeposit)approvedDeposits.push({created,amount});
+  }
+  if(financialSummary){
+   dep=Number(financialSummary.totalDepositUSDT??dep);
+   wd=Number(financialSummary.totalWithdrawalUSDT??wd);
+   monthTotals.deposit.current=Number(financialSummary.currentMonthDepositUSDT??monthTotals.deposit.current);
+   monthTotals.deposit.previous=Number(financialSummary.previousMonthDepositUSDT??monthTotals.deposit.previous);
+   monthTotals.withdrawal.current=Number(financialSummary.currentMonthWithdrawalUSDT??monthTotals.withdrawal.current);
+   monthTotals.withdrawal.previous=Number(financialSummary.previousMonthWithdrawalUSDT??monthTotals.withdrawal.previous);
+  }
+  $('dashDeposits').textContent=dashboardMoney(dep);
+  $('dashWithdrawals').textContent=dashboardMoney(wd);
+  setDashboardTrend('dashDepositsTrend',monthTotals.deposit.current,monthTotals.deposit.previous);
+  setDashboardTrend('dashWithdrawalsTrend',monthTotals.withdrawal.current,monthTotals.withdrawal.previous);
+
+  if(financialSummary){
+   setDashboardTrend('dashIncomeTrend',financialSummary.currentMonthIncomeUSDT,financialSummary.previousMonthIncomeUSDT);
+   $('dashIncomeTrend').title=Number(financialSummary.estimatedLegacyOrders||0)>0?'Compared with the previous month; older orders without saved USDT commission are estimated using the user currency currently on file.':'Compared with the previous month';
+  }else{
+   const key='zonguru_admin_income_snapshot_'+String(currentAdmin?.id||'admin');
+   const previous=Number(localStorage.getItem(key));
+   if(Number.isFinite(previous)&&previous>0){
+    setDashboardTrend('dashIncomeTrend',totalIncome,previous);
+    $('dashIncomeTrend').title='Change since this browser last viewed the dashboard';
+   }else{
+    setDashboardTrendUnavailable('dashIncomeTrend');
+    $('dashIncomeTrend').title='Monthly income comparison will appear after the income trend service is deployed';
+   }
+   localStorage.setItem(key,String(totalIncome));
+  }
+
+  const days=[];
+  for(let i=6;i>=0;i--){
+   const d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);
+   days.push({date:d,label:d.toLocaleDateString('en',{weekday:'short'}),value:0});
+  }
+  for(const item of approvedDeposits){
+   const day=days.find(v=>v.date.toDateString()===item.created.toDateString());
+   if(day)day.value+=item.amount;
+  }
+  if(Array.isArray(financialSummary?.dailyDeposits)){
+   days.forEach(day=>day.value=0);
+   for(const row of financialSummary.dailyDeposits){
+    const day=days.find(v=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Yangon'}).format(v.date)===row.day);
+    if(day)day.value=Number(row.amountUSDT||0);
+   }
+  }
+  const max=Math.max(1,...days.map(v=>v.value));
+  const pts=days.map((v,i)=>({x:25+i*55,y:140-v.value/max*105}));
+  const path=pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ');
+  $('dashChart').innerHTML='<svg viewBox="0 0 420 170" style="width:100%;height:100%" aria-label="Approved deposits for the last seven days">'+[35,70,105,140].map(y=>'<line x1="15" y1="'+y+'" x2="405" y2="'+y+'" stroke="#e9ecf7" stroke-dasharray="3 4"/>').join('')+'<path d="'+path+' L355 140 L25 140 Z" fill="#6338ed" opacity=".12"/><path d="'+path+'" fill="none" stroke="#6338ed" stroke-width="3" stroke-linecap="round"/>'+pts.map(p=>'<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#6338ed"/>').join('')+days.map((v,i)=>'<text x="'+pts[i].x+'" y="162" text-anchor="middle" font-size="10" fill="#68708d">'+v.label+'</text>').join('')+'</svg>';
+
+  $('dashProductsBody').innerHTML=products.slice(0,10).map((p,i)=>{
+   const image=p.imageUrl||p.image||p.thumbnail||'';
+   const img=image?'<img src="'+esc(image)+'" alt="" style="width:42px;height:42px;object-fit:contain;border-radius:10px;background:#f5f6fb">':'<span style="display:inline-grid;place-items:center;width:42px;height:42px;border-radius:10px;background:#f5f6fb;color:#8790b0">▣</span>';
+   const special=p.specialTask?'Task '+esc(p.specialTaskNumber??'—')+' · '+money(p.specialRequiredAmount)+' · '+esc(p.specialCommissionMultiplier??'—')+'x':'Off';
+   return '<tr><td>'+(i+1)+'</td><td><div style="display:flex;align-items:center;gap:10px">'+img+'<b>'+esc(p.name||p.title||'—')+'</b></div></td><td>'+money(p.price)+'</td><td>'+esc(p.profitRate??0)+'</td><td>VIP '+esc(p.requiredVip??0)+'</td><td>'+special+'</td><td><button class="secondary" onclick="tab(&quot;products&quot;)">Manage</button></td></tr>';
+  }).join('')||'<tr><td colspan="7">No products configured</td></tr>';
+ }catch(e){
+  console.error('Dashboard load failed',e);
+  ['dashBalance','dashUsers','dashIncome','dashDeposits','dashWithdrawals'].forEach(id=>{if($(id))$(id).textContent='—'});
+  setDashboardTrendUnavailable('dashIncomeTrend');setDashboardTrendUnavailable('dashDepositsTrend');setDashboardTrendUnavailable('dashWithdrawalsTrend');
+ }
+}
+function populateBonusRecipients(){
  const sel=$('bonusRecipients');if(!sel)return;
  sel.innerHTML=users.map(u=>'<option value="'+esc(uid(u))+'">'+esc(u.username||uid(u))+' · '+esc(u.phone||u.email||'')+'</option>').join('');
 }
