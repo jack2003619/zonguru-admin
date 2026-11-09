@@ -1082,6 +1082,43 @@ app.get('/api/admin/users/:id/history', auth, async (req,res)=>{
  }catch(e){console.error('User history:',e.message);res.status(500).json({success:false,message:'Failed to load user history'})}
 });
 
+app.get('/api/admin/dashboard/income', auth, async (req, res) => {
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (req.headers.authorization) headers.Authorization = req.headers.authorization;
+    const remote = await fetch(BACKEND_URL + '/api/admin/dashboard/income', { method: 'GET', headers });
+    const rawText = await remote.text();
+    let result;
+    try { result = JSON.parse(rawText); }
+    catch { result = { success: false, message: 'Backend returned non-JSON response' }; }
+    if (!remote.ok || result.success !== true) {
+      return res.status(remote.status || 502).json({
+        success: false,
+        message: result.message || 'Unable to load income trend from platform backend'
+      });
+    }
+    const scopedIds = await getScopedUserIds(req);
+    const allowed = scopedIds ? new Set(scopedIds.map(id => String(id))) : null;
+    const sumForScope = rows => (Array.isArray(rows) ? rows : []).reduce((sum, row) => {
+      if (allowed && !allowed.has(String(row.userId || ''))) return sum;
+      const amount = Number(row.amountUSDT || 0);
+      return sum + (Number.isFinite(amount) && amount > 0 ? amount : 0);
+    }, 0);
+    res.set('Cache-Control', 'no-store');
+    return res.json({
+      success: true,
+      currentMonthIncomeUSDT: Number(sumForScope(result.currentMonthByUser).toFixed(2)),
+      previousMonthIncomeUSDT: Number(sumForScope(result.previousMonthByUser).toFixed(2)),
+      estimatedLegacyOrders: Number(result.estimatedLegacyOrders || 0),
+      currentMonthStart: result.currentMonthStart || null,
+      previousMonthStart: result.previousMonthStart || null
+    });
+  } catch (error) {
+    console.error('Dashboard income trend proxy:', error.message);
+    return res.status(502).json({ success: false, message: 'Unable to load income trend from platform backend' });
+  }
+});
+
 app.get('/api/admin/transactions', auth, async (req, res) => {
   try {
     const userIds = await getScopedUserIds(req);
