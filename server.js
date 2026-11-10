@@ -841,11 +841,72 @@ app.use('/api/admin', auth, async (req,res,next)=>{
       const visibleIds=new Set(visibleUsers.map(u=>String(u._id||u.id)));
       const remoteRows=remote.transactions.filter(t=>isSuperAdmin(req)||visibleIds.has(String(t.userId?._id||t.userId||'')));
       const local=await Transaction.find(isSuperAdmin(req)?{}:{userId:{$in:[...visibleIds]}}).sort({createdAt:-1}).limit(500).lean();
-      const merged=[...remoteRows,...local],seen=new Set();
-      const transactions=merged.filter(t=>{
-        const key=String(t._id||'')+'|'+String(t.userId?._id||t.userId||'')+'|'+String(t.createdAt||'')+'|'+String(t.type||'')+'|'+String(t.amount||'');
-        if(seen.has(key))return false;seen.add(key);return true;
-      }).sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,500);
+
+      // The Admin service may still contain legacy copies of transactions that
+      // are now served by the platform backend. Their Mongo IDs can differ even
+      // when they represent the same user submission. Keep the platform copy
+      // and suppress only matching cross-database legacy copies; never collapse
+      // two rows that both came from the same source.
+      const transactionType=t=>{
+        const type=String(t?.type||'').trim().toLowerCase();
+        return type==='withdraw'?'withdrawal':type;
+      };
+      const canonicalValue=value=>{
+        if(Array.isArray(value))return value.map(canonicalValue);
+        if(value&&typeof value==='object'){
+          return Object.keys(value).sort().reduce((out,key)=>{out[key]=canonicalValue(value[key]);return out;},{});
+        }
+        return value;
+      };
+      const stableDetails=t=>{
+        const value=t?.details;
+        if(!value||typeof value!=='object')return '';
+        return JSON.stringify(canonicalValue(value));
+      };
+      const isLegacyCopyOfRemote=(legacy,current)=>{
+        const legacyId=String(legacy?._id||legacy?.id||'');
+        const currentId=String(current?._id||current?.id||'');
+        if(legacyId&&currentId&&legacyId===currentId)return true;
+
+        const legacyUser=String(legacy?.userId?._id||legacy?.userId||'');
+        const currentUser=String(current?.userId?._id||current?.userId||'');
+        if(!legacyUser||legacyUser!==currentUser)return false;
+        if(transactionType(legacy)!==transactionType(current))return false;
+
+        const legacyAmount=Number(legacy?.amount),currentAmount=Number(current?.amount);
+        if(!Number.isFinite(legacyAmount)||!Number.isFinite(currentAmount)||
+           Math.round(legacyAmount*100)!==Math.round(currentAmount*100))return false;
+        const legacyCurrency=String(legacy?.currency||'USDT').trim().toUpperCase();
+        const currentCurrency=String(current?.currency||'USDT').trim().toUpperCase();
+        if(legacyCurrency!==currentCurrency)return false;
+
+        const legacyTime=new Date(legacy?.createdAt||0).getTime();
+        const currentTime=new Date(current?.createdAt||0).getTime();
+        if(!Number.isFinite(legacyTime)||!Number.isFinite(currentTime)||!legacyTime||!currentTime||
+           Math.abs(legacyTime-currentTime)>15000)return false;
+
+        const legacyMethod=String(legacy?.method||'').trim().toLowerCase();
+        const currentMethod=String(current?.method||'').trim().toLowerCase();
+        if(legacyMethod&&currentMethod&&legacyMethod!==currentMethod)return false;
+
+        const legacyDetails=stableDetails(legacy),currentDetails=stableDetails(current);
+        if(legacyDetails&&currentDetails&&legacyDetails!==currentDetails)return false;
+
+        const legacyProof=String(legacy?.proofImage||legacy?.details?.proofImage||legacy?.details?.screenshot||'');
+        const currentProof=String(current?.proofImage||current?.details?.proofImage||current?.details?.screenshot||'');
+        if(legacyProof&&currentProof&&legacyProof!==currentProof)return false;
+
+        const legacyDebit=Number(legacy?.debitedAmount||0),currentDebit=Number(current?.debitedAmount||0);
+        if(legacyDebit>0&&currentDebit>0&&Math.round(legacyDebit*100)!==Math.round(currentDebit*100))return false;
+        const legacyDebitCurrency=String(legacy?.debitedCurrency||'').trim().toUpperCase();
+        const currentDebitCurrency=String(current?.debitedCurrency||'').trim().toUpperCase();
+        if(legacyDebitCurrency&&currentDebitCurrency&&legacyDebitCurrency!==currentDebitCurrency)return false;
+
+        return true;
+      };
+      const legacyOnly=local.filter(legacy=>!remoteRows.some(current=>isLegacyCopyOfRemote(legacy,current)));
+      const transactions=[...remoteRows,...legacyOnly]
+        .sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0)).slice(0,500);
       return res.json({success:true,transactions});
     }catch(e){
       console.error('Load transactions from platform backend:',e.message);
