@@ -389,7 +389,7 @@ body{min-width:320px}
  <h4 style="margin:0 0 12px">Ticker controls</h4>
  <div class="grid">
   <div class="field"><label><input id="liveActivityEnabled" type="checkbox" checked style="width:auto;margin-right:7px">Show Live Activities on platform</label></div>
-  <div class="field"><label for="liveActivitySpeed">Animation duration (seconds per cycle · higher = slower)</label><input id="liveActivitySpeed" type="number" min="30" max="300" step="1" value="90"></div>
+  <div class="field"><label for="liveActivitySpeed">Animation duration (15–45 seconds per cycle · lower = faster)</label><input id="liveActivitySpeed" type="number" min="15" max="45" step="1" value="30"></div>
  </div>
  <div class="actions"><button class="primary" onclick="saveLiveActivitySettings()">Save ticker settings</button><button class="secondary" onclick="loadLiveActivitiesAdmin()">Refresh</button></div>
  <div id="liveActivitySettingsMsg"></div>
@@ -1180,7 +1180,7 @@ async function loadLiveActivitiesAdmin(){
   const d=await api('/api/admin/live-activities');
   const settings=d.settings||{};
   $('liveActivityEnabled').checked=settings.enabled!==false;
-  $('liveActivitySpeed').value=Number(settings.speedSeconds||90);
+  $('liveActivitySpeed').value=Number(settings.speedSeconds||30);
   liveActivityItems=Array.isArray(d.items)?d.items:[];
   $('liveActivityTotal').textContent=String(Number(d.total??liveActivityItems.length));
   $('liveActivityActive').textContent=String(Number(d.activeCount??liveActivityItems.filter(x=>x.active!==false).length));
@@ -1189,7 +1189,7 @@ async function loadLiveActivitiesAdmin(){
 }
 async function saveLiveActivitySettings(){
  const enabled=$('liveActivityEnabled').checked,speedSeconds=Number($('liveActivitySpeed').value);
- if(!Number.isInteger(speedSeconds)||speedSeconds<30||speedSeconds>300){msg('liveActivitySettingsMsg','Enter a duration from 30 to 300 seconds.');return}
+ if(!Number.isInteger(speedSeconds)||speedSeconds<15||speedSeconds>45){msg('liveActivitySettingsMsg','Enter a duration from 15 to 45 seconds.');return}
  try{await api('/api/admin/live-activities/settings',{method:'PATCH',body:JSON.stringify({enabled,speedSeconds})});msg('liveActivitySettingsMsg','Ticker settings saved.',true)}catch(e){msg('liveActivitySettingsMsg',e.message)}
 }
 function clearLiveActivityForm(){
