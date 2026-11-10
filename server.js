@@ -1615,6 +1615,120 @@ app.get('/api/admin/audits', auth, async (req, res) => {
   }
 });
 
+
+const liveActivityItemSchema = new mongoose.Schema({
+  phone: { type: String, required: true, trim: true, maxlength: 40 },
+  message: { type: String, required: true, trim: true, maxlength: 180 },
+  amountText: { type: String, required: true, trim: true, maxlength: 50 },
+  active: { type: Boolean, default: true, index: true },
+  createdAt: { type: Date, default: Date.now }
+}, { collection: 'live_activity_items', strict: false });
+const AdminLiveActivityItem = mongoose.model('AdminLiveActivityItem', liveActivityItemSchema);
+const liveActivitySettingsSchema = new mongoose.Schema({
+  key: { type: String, default: 'global', unique: true },
+  enabled: { type: Boolean, default: true },
+  speedSeconds: { type: Number, default: 90, min: 30, max: 300 },
+  updatedAt: { type: Date, default: Date.now }
+}, { collection: 'live_activity_settings', strict: false });
+const AdminLiveActivitySettings = mongoose.model('AdminLiveActivitySettings', liveActivitySettingsSchema);
+
+app.get('/api/admin/live-activities', auth, async (req, res) => {
+  try {
+    if (!isSuperAdmin(req)) return res.status(403).json({ success: false, message: 'Main admin only' });
+    const [items, setting, total, activeCount] = await Promise.all([
+      AdminLiveActivityItem.find().sort({ createdAt: -1 }).limit(500).lean(),
+      AdminLiveActivitySettings.findOne({ key: 'global' }).lean(),
+      AdminLiveActivityItem.countDocuments(),
+      AdminLiveActivityItem.countDocuments({ active: { $ne: false } })
+    ]);
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, items, settings: { enabled: setting?.enabled !== false, speedSeconds: Number(setting?.speedSeconds || 90) }, total, activeCount });
+  } catch (error) {
+    console.error('List live activities:', error.stack || error.message);
+    res.status(500).json({ success: false, message: 'Unable to load live activities' });
+  }
+});
+
+app.patch('/api/admin/live-activities/settings', auth, async (req, res) => {
+  try {
+    if (!isSuperAdmin(req)) return res.status(403).json({ success: false, message: 'Main admin only' });
+    const enabled = req.body?.enabled;
+    const speedSeconds = Number(req.body?.speedSeconds);
+    if (typeof enabled !== 'boolean' || !Number.isInteger(speedSeconds) || speedSeconds < 30 || speedSeconds > 300)
+      return res.status(400).json({ success: false, message: 'Invalid ticker settings' });
+    const settings = await AdminLiveActivitySettings.findOneAndUpdate(
+      { key: 'global' },
+      { $set: { enabled, speedSeconds, updatedAt: new Date() }, $setOnInsert: { key: 'global' } },
+      { upsert: true, new: true, runValidators: true }
+    ).lean();
+    await audit(req.admin, 'LIVE_ACTIVITY_SETTINGS_UPDATE', 'Updated live activity ticker settings');
+    res.json({ success: true, settings });
+  } catch (error) {
+    console.error('Save live activity settings:', error.stack || error.message);
+    res.status(500).json({ success: false, message: 'Unable to save live activity settings' });
+  }
+});
+
+app.post('/api/admin/live-activities', auth, async (req, res) => {
+  try {
+    if (!isSuperAdmin(req)) return res.status(403).json({ success: false, message: 'Main admin only' });
+    const phone = String(req.body?.phone || '').trim();
+    const message = String(req.body?.message || '').trim();
+    const amountText = String(req.body?.amountText || '').trim();
+    if (!phone || !message || !amountText)
+      return res.status(400).json({ success: false, message: 'Phone number, display text and amount are required' });
+    if (phone.length > 40 || message.length > 180 || amountText.length > 50)
+      return res.status(400).json({ success: false, message: 'Live activity fields exceed the allowed length' });
+    const item = await AdminLiveActivityItem.create({ phone, message, amountText, active: true });
+    await audit(req.admin, 'LIVE_ACTIVITY_CREATE', 'Created PROMO live activity item');
+    res.status(201).json({ success: true, item });
+  } catch (error) {
+    console.error('Create live activity:', error.stack || error.message);
+    res.status(500).json({ success: false, message: 'Unable to create live activity item' });
+  }
+});
+
+app.patch('/api/admin/live-activities/:id', auth, async (req, res) => {
+  try {
+    if (!isSuperAdmin(req)) return res.status(403).json({ success: false, message: 'Main admin only' });
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid live activity id' });
+    const updates = {};
+    for (const key of ['phone', 'message', 'amountText']) {
+      if (req.body?.[key] !== undefined) {
+        updates[key] = String(req.body[key]).trim();
+        const max = key === 'phone' ? 40 : key === 'message' ? 180 : 50;
+        if (!updates[key] || updates[key].length > max) return res.status(400).json({ success: false, message: 'Invalid ' + key });
+      }
+    }
+    if (req.body?.active !== undefined) {
+      if (typeof req.body.active !== 'boolean') return res.status(400).json({ success: false, message: 'Active must be true or false' });
+      updates.active = req.body.active;
+    }
+    if (!Object.keys(updates).length) return res.status(400).json({ success: false, message: 'No changes supplied' });
+    const item = await AdminLiveActivityItem.findByIdAndUpdate(req.params.id, { $set: updates }, { new: true, runValidators: true });
+    if (!item) return res.status(404).json({ success: false, message: 'Live activity item not found' });
+    await audit(req.admin, 'LIVE_ACTIVITY_UPDATE', 'Updated PROMO live activity item');
+    res.json({ success: true, item });
+  } catch (error) {
+    console.error('Update live activity:', error.stack || error.message);
+    res.status(500).json({ success: false, message: 'Unable to update live activity item' });
+  }
+});
+
+app.delete('/api/admin/live-activities/:id', auth, async (req, res) => {
+  try {
+    if (!isSuperAdmin(req)) return res.status(403).json({ success: false, message: 'Main admin only' });
+    if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: 'Invalid live activity id' });
+    const item = await AdminLiveActivityItem.findByIdAndDelete(req.params.id);
+    if (!item) return res.status(404).json({ success: false, message: 'Live activity item not found' });
+    await audit(req.admin, 'LIVE_ACTIVITY_DELETE', 'Deleted PROMO live activity item');
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Delete live activity:', error.stack || error.message);
+    res.status(500).json({ success: false, message: 'Unable to delete live activity item' });
+  }
+});
+
 // Start HTTP immediately so Render health checks can succeed even while MongoDB connects.
 const server = app.listen(PORT, () => console.log(`Zonguru admin server running on port ${PORT}`));
 
