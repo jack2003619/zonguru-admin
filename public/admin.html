@@ -375,12 +375,12 @@ body{min-width:320px}
 <div class="field"><label>Message (optional)</label><textarea id="bonusMessage" rows="3" maxlength="2000" placeholder="A bonus is available for you to claim."></textarea></div>
 <div class="actions"><button class="primary" onclick="sendBonus()">Send Cash Bonus</button><button class="secondary" onclick="sendAdminNotification()">Send Text Notification</button><button class="secondary" onclick="loadBonuses()">Refresh Bonus History</button></div>
 <div id="bonusMsg"></div>
-<div class="tablewrap"><table><thead><tr><th>User ID</th><th>Title</th><th>Amount (USDT)</th><th>Expiry</th><th>Status</th><th>Claimed</th></tr></thead><tbody id="bonusesBody"></tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>User</th><th>Title</th><th>Amount (USDT)</th><th>Expiry</th><th>Status</th><th>Claimed</th></tr></thead><tbody id="bonusesBody"></tbody></table></div>
 </section>
 <section id="transactions" class="card hidden"><h3>Transactions</h3><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><input id="txSearch" type="search" placeholder="Search by username, email, phone, account ID, type or status" oninput="loadTx()" style="flex:1;min-width:220px"><button type="button" onclick="document.getElementById('txSearch').value='';loadTx()">Clear Search</button></div><div id="txMsg"></div><div class="tablewrap"><table><thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Admin</th><th>Status</th><th>Details</th><th>Action</th></tr></thead><tbody id="txBody"></tbody></table></div></section>
 <section id="products" class="card hidden"><h3>Products & Insufficient-Balance Rules</h3><div class="notice">Safe mode: an insufficient-balance rule blocks the order and shows the shortfall. It does not create a negative balance.</div><div class="actions"><button class="primary" onclick="editProduct()">Add Product</button><button class="secondary" onclick="loadProducts()">Refresh</button></div><div id="productMsg"></div><div class="tablewrap"><table><thead><tr><th>Product</th><th>Price</th><th>Profit Amount</th><th>VIP</th><th>Insufficient Rule</th><th>Action</th></tr></thead><tbody id="productsBody"></tbody></table></div></section>
 <section id="chat" class="card hidden"><h3>Customer Service <span id="chatNoticeBadge" class="pill" style="display:none;background:#ffe1e1;color:#9b2020">New messages</span></h3><div id="chatNotice" class="notice" style="display:none"></div><div class="chat"><div><input id="chatSearch" placeholder="Search user" oninput="renderChatUsers()" style="width:100%;padding:10px;border:1px solid #ddd6ee;border-radius:9px"><div id="chatUsers" class="chatUsers" style="margin-top:8px"></div></div><div><div id="chatHead" class="stat">Select a user</div><div id="chatBody" class="chatBody"></div><div class="actions"><textarea id="chatInput" placeholder="Reply..." style="flex:1;min-height:60px"></textarea><button class="primary" onclick="sendReply()">Send</button></div></div></div></section>
-<section id="audits" class="card hidden"><h3>Audit Logs</h3><div id="auditMsg"></div><div class="tablewrap"><table><thead><tr><th>Action</th><th>Target</th><th>Details</th><th>Date</th></tr></thead><tbody id="auditBody"></tbody></table></div></section>
+<section id="audits" class="card hidden"><h3>Audit Logs</h3><div id="auditMsg"></div><div class="tablewrap"><table><thead><tr><th>Action</th><th>User</th><th>Details</th><th>Date</th></tr></thead><tbody id="auditBody"></tbody></table></div></section>
 <section id="eventsSettings" class="card hidden"><h3>Events Content</h3><div class="notice">Main Admin and Second Admin accounts may edit Events title, explanation and image only. Other platform settings remain restricted.</div><div class="notice">Main Admin only. Update the Events title, explanation and image. Saved changes appear on the platform when users open Events.</div><div class="field"><label>Events title</label><input id="eventTitleInput" maxlength="120" placeholder="Salary List"></div><div class="field"><label>Events text / salary explanation</label><textarea id="eventTextInput" rows="8" maxlength="8000" style="width:100%;border:1px solid #ddd6ee;border-radius:9px;padding:10px"></textarea></div><div class="field"><label>Events image (PNG, JPG, WEBP or GIF; maximum 10 MB)</label><input id="eventImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewEventImage()"><img id="eventImagePreview" alt="Events image preview" style="display:none;max-width:100%;max-height:260px;object-fit:contain;margin-top:8px;border-radius:10px"><button type="button" class="secondary" onclick="clearEventImage()">Remove image</button></div><div class="actions"><button class="primary" onclick="saveEventsContent()">Save Events Content</button><button class="secondary" onclick="loadEventsContent()">Refresh Events</button></div><div id="eventsContentMsg"></div></section>
 <section id="platform" class="card hidden">
 <h3>Platform Settings</h3>
@@ -826,8 +826,17 @@ async function sendBonus(){
  }catch(e){msg('bonusMsg',e.message)}
 }
 async function loadBonuses(){
- try{const d=await api('/api/admin/bonuses');$('bonusesBody').innerHTML=(d.bonuses||[]).map(b=>'<tr><td>'+esc(b.userId)+'</td><td>'+esc(b.title||'Bonus')+'</td><td>'+money(b.amountUSDT)+'</td><td>'+esc(new Date(b.expiresAt).toLocaleString())+'</td><td>'+esc(b.status||'active')+'</td><td>'+esc(b.claimedAt?new Date(b.claimedAt).toLocaleString():'-')+'</td></tr>').join('')||'<tr><td colspan="6">No bonuses yet.</td></tr>';}
- catch(e){msg('bonusMsg',e.message)}
+ try{
+  const d=await api('/api/admin/bonuses');
+  if(!users.length){try{const ud=await api('/api/admin/users');users=ud.users||[]}catch{}}
+  const userById=new Map(users.map(u=>[uid(u),u]));
+  $('bonusesBody').innerHTML=(d.bonuses||[]).map(b=>{
+   const id=String(b.userId?._id||b.userId||'');
+   const user=userById.get(id);
+   const username=user?.username||b.username||b.userName||'Unknown user';
+   return '<tr><td><b>'+esc(username)+'</b><br><span class="small">User ID: '+esc(id||'-')+'</span></td><td>'+esc(b.title||'Bonus')+'</td><td>'+money(b.amountUSDT)+'</td><td>'+esc(new Date(b.expiresAt).toLocaleString())+'</td><td>'+esc(b.status||'active')+'</td><td>'+esc(b.claimedAt?new Date(b.claimedAt).toLocaleString():'-')+'</td></tr>';
+  }).join('')||'<tr><td colspan="6">No bonuses yet.</td></tr>';
+ }catch(e){msg('bonusMsg',e.message)}
 }
 
 async function loadUsers(){try{const d=await api('/api/admin/users');users=d.users||[];renderUsers();await loadFinancialSummary()}catch(e){msg('usersMsg',e.message)}}
@@ -992,7 +1001,20 @@ let chatLastByUser={},chatKnownLatest={},chatNewUsers={},chatUnreadCount=0,chatP
 async function openChat(id){chatSelected=chatList.find(u=>uid(u)===id)||users.find(u=>uid(u)===id);if(chatLastByUser[id]){chatKnownLatest[id]=chatLastByUser[id].time;chatReadAt[id]=chatLastByUser[id].time;saveChatReadAt()}delete chatNewUsers[id];chatUnreadCount=Object.keys(chatNewUsers).filter(k=>chatNewUsers[k]).length;$('chatNoticeBadge').textContent=chatUnreadCount+' unread';$('chatNoticeBadge').style.display=chatUnreadCount?'inline-block':'none';$('chatNotice').style.display=chatUnreadCount?'block':'none';tab('chat');$('chatHead').innerHTML='<b>'+esc(chatSelected?.username||id)+'</b><br><span class="muted">'+esc(chatSelected?.email||chatSelected?.phone||id)+'</span>';await loadConversation();renderChatUsers()}
 async function loadConversation(){if(!chatSelected)return;try{const d=await api('/api/admin/chat/'+uid(chatSelected));const a=d.messages||[];$('chatBody').innerHTML=a.map(m=>`<div class="msg ${m.sender==='admin'?'admin':'user'}">${m.text?'<div>'+esc(m.text)+'</div>':''}${m.image?'<a href="'+esc(m.image)+'" target="_blank" rel="noopener"><img src="'+esc(m.image)+'" alt="User sent image" style="display:block;max-width:100%;max-height:320px;object-fit:contain;border-radius:9px;margin-top:6px;cursor:zoom-in"></a>':''}<div class="small">${m.createdAt?new Date(m.createdAt).toLocaleString():''}</div></div>`).join('')||'<div class="muted">No messages.</div>';$('chatBody').scrollTop=$('chatBody').scrollHeight}catch(e){$('chatBody').innerHTML='<div class="notice">'+esc(e.message)+'</div>'}}
 if(!chatPollStarted){chatPollStarted=true;setInterval(()=>{if(!$('chat').classList.contains('hidden'))loadChatUsers()},20000)}async function sendReply(){if(!chatSelected)return alert('Select a user.');const text=$('chatInput').value.trim();if(!text)return;try{await api('/api/admin/messages',{method:'POST',body:JSON.stringify({userId:uid(chatSelected),text})});$('chatInput').value='';await loadConversation()}catch(e){alert(e.message)}}
-async function loadAudits(){try{const d=await api('/api/admin/audits');const a=d.audits||[];$('auditBody').innerHTML=a.map(x=>`<tr><td>${esc(x.action)}</td><td>${esc(x.targetUserId||'-')}</td><td>${esc(x.details||'-')}</td><td>${x.createdAt?new Date(x.createdAt).toLocaleString():'-'}</td></tr>`).join('')}catch(e){msg('auditMsg',e.message)}}
+async function loadAudits(){
+ try{
+  const d=await api('/api/admin/audits');
+  if(!users.length){try{const ud=await api('/api/admin/users');users=ud.users||[]}catch{}}
+  const userById=new Map(users.map(u=>[uid(u),u]));
+  const a=d.audits||[];
+  $('auditBody').innerHTML=a.map(x=>{
+   const id=String(x.targetUserId?._id||x.targetUserId||'');
+   const user=userById.get(id);
+   const username=user?.username||x.targetUsername||x.username||'Unknown user';
+   return `<tr><td>${esc(x.action)}</td><td><b>${esc(username)}</b><br><span class="small">User ID: ${esc(id||'-')}</span></td><td>${esc(x.details||'-')}</td><td>${x.createdAt?new Date(x.createdAt).toLocaleString():'-'}</td></tr>`;
+  }).join('')||'<tr><td colspan="4">No audit records</td></tr>';
+ }catch(e){msg('auditMsg',e.message)}
+}
 
 let secondAdminPasswordTargetId='';
 function openSecondAdminPasswordModal(id,username){
