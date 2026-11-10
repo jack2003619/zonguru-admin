@@ -339,7 +339,7 @@ body{min-width:320px}
 <div class="actions"><button class="primary" onclick="createSecondAdmin()">Create Second Admin</button><button class="secondary" onclick="loadAdminManagement()">Refresh</button></div>
 <div id="adminMsg"></div>
 <h4 style="margin-top:18px">Second Admins</h4>
-<div class="tablewrap"><table><thead><tr><th>Username</th><th>Status</th><th>Users</th><th>Created</th><th>Invite</th></tr></thead><tbody id="adminsBody"></tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>Username</th><th>Status</th><th>Users</th><th>Created</th><th>Invite</th><th>Password</th></tr></thead><tbody id="adminsBody"></tbody></table></div>
 <h4 style="margin-top:18px">Invite Codes</h4>
 <div class="grid">
   <div class="field"><label>Assign Invite Code To</label><select id="inviteOwner"></select></div>
@@ -444,6 +444,18 @@ body{min-width:320px}
 </div>
 <div id="userMsg"></div></div></div>
 
+<div id="secondAdminPasswordModal" class="modal" onclick="if(event.target===this)closeSecondAdminPasswordModal()">
+  <div class="modalbox" style="width:min(440px,100%)">
+    <h3>Change Second Admin Password</h3>
+    <div id="secondAdminPasswordMeta" class="muted"></div>
+    <div class="notice">Set a new login password for this Second Admin. The minimum length is 6 characters.</div>
+    <div class="field"><label>New Password</label><input id="secondAdminNewPassword" type="password" minlength="6" maxlength="128" autocomplete="new-password" placeholder="Enter new password"></div>
+    <div class="field"><label>Confirm Password</label><input id="secondAdminConfirmPassword" type="password" minlength="6" maxlength="128" autocomplete="new-password" placeholder="Re-enter new password"></div>
+    <div id="secondAdminPasswordMsg" class="small"></div>
+    <div class="actions"><button class="secondary" type="button" onclick="closeSecondAdminPasswordModal()">Cancel</button><button id="saveSecondAdminPasswordBtn" class="primary" type="button" onclick="saveSecondAdminPassword()">Save Password</button></div>
+  </div>
+</div>
+
 <div id="historyModal" class="modal"><div class="modalbox"><h3>User History</h3><div id="historyHead" class="muted"></div><h4>Registration IP Address</h4><div id="registerAccessInfo" class="notice">Loading…</div><h4>Latest Login IP Address</h4><div id="latestLoginAccessInfo" class="notice">Loading…</div><h4>Login IP History</h4><div class="tablewrap"><table style="min-width:650px"><thead><tr><th>Login Date &amp; Time</th><th>IP Address</th><th>Device</th></tr></thead><tbody id="loginIpHistoryBody"></tbody></table></div><div class="tablewrap" style="margin-top:10px"><table style="min-width:760px"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Status</th><th>Details</th></tr></thead><tbody id="historyBody"></tbody></table></div><div class="actions"><button onclick="closeHistory()">Close</button></div></div></div>
 <div id="productModal" class="modal"><div class="modalbox"><h3>Product / Task Settings</h3><input id="pid" type="hidden"><div class="grid"><div class="field"><label>Name</label><input id="pn"></div><div class="field"><label>Price</label><input id="pp" type="number" min="0" step="0.01"></div><div class="field"><label>Profit Amount / Rate</label><input id="pr" type="number" min="0" step="0.01"></div><div class="field"><label>Required VIP</label><input id="pv" type="number" min="0" max="3"></div></div><hr><h4>Insufficient Balance</h4><div class="notice">Insufficient-balance rules are now configured per selected user under <b>Users → Settings</b>. Product-level insufficient-balance rules are not applied to users globally.</div><div class="actions"><button class="primary" onclick="saveProduct()">Save</button><button onclick="closeProduct()">Close</button></div><div id="prodMsg"></div></div></div>
 
@@ -473,7 +485,7 @@ const ADMIN_I18N={
  'Total Balance':'总余额','USDT · Current visible user balances':'USDT · 当前可见用户余额','Total Users':'用户总数','Registered accounts':'已注册账户','Total Income':'总收入','USDT · vs last month':'USDT · 与上月相比','Total Deposit':'总存款','Approved · vs last month':'已批准 · 与上月相比','Total Withdrawal':'总提现','Latest products':'最新产品','Manage Products':'管理产品','Product Name':'产品名称','Price':'价格','Profit Rate':'利润率','VIP Level':'VIP等级','Special Task':'特殊任务','Action':'操作','Loading products…':'正在加载产品…',
  'Total User Balance (USDT)':'用户总余额 (USDT)','Current balances across visible users':'当前可见用户的余额','Total Deposit Income (USDT)':'存款总额 (USDT)','Approved deposits only':'仅统计已批准的存款','Total Withdrawal (USDT)':'提现总额 (USDT)','Approved withdrawals only':'仅统计已批准的提现','Refresh Totals':'刷新汇总','User':'用户','Email / Phone':'邮箱 / 电话','Second Admin':'二级管理员','Balance':'余额','Frozen':'冻结金额','Credit':'信用分','VIP':'VIP','Actions':'操作','Search users by username, email, phone or ID':'按用户名、邮箱、电话或 ID 搜索用户',
  'View and calculate exchange rates using the platform currency rates. Preview only — this does not change any user balance.':'使用平台汇率查看和计算汇率。仅供预览，不会更改任何用户余额。','Preview only — uses the platform\'s existing currency rates. This does not change any user balance.':'仅供预览 — 使用平台现有汇率，不会更改任何用户余额。','Amount':'金额','Converted amount':'换算金额','First currency':'原始货币','Second currency':'目标货币',
- 'Second Admin Management':'二级管理员管理','Main Admin only. Each Second Admin can see and control only users registered with that admin\'s invite code. Existing users/data are preserved.':'仅主管理员可操作。每位二级管理员只能查看和管理使用其邀请码注册的用户。现有用户和数据会保留。','Second Admin Username':'二级管理员用户名','Password (minimum 6)':'密码（至少 6 位）','Create Second Admin':'创建二级管理员','Refresh':'刷新','Status':'状态','Created':'创建时间','Invite':'邀请码','Invite Codes':'邀请码管理','Assign Invite Code To':'分配邀请码给','Generate Invite Code':'生成邀请码','Code':'代码','Used':'已使用',
+ 'Second Admin Management':'二级管理员管理','Main Admin only. Each Second Admin can see and control only users registered with that admin\'s invite code. Existing users/data are preserved.':'仅主管理员可操作。每位二级管理员只能查看和管理使用其邀请码注册的用户。现有用户和数据会保留。','Second Admin Username':'二级管理员用户名','Password (minimum 6)':'密码（至少 6 位）','Create Second Admin':'创建二级管理员','Refresh':'刷新','Status':'状态','Created':'创建时间','Invite':'邀请码','Password':'密码','Change Password':'更改密码','Change Second Admin Password':'更改二级管理员密码','New Password':'新密码','Confirm Password':'确认密码','Set a new login password for this Second Admin. The minimum length is 6 characters.':'为此二级管理员设置新的登录密码，至少需要 6 个字符。','Enter new password':'输入新密码','Re-enter new password':'再次输入新密码','Save Password':'保存密码','Passwords do not match.':'两次输入的密码不一致。','Password must be at least 6 characters.':'密码至少需要 6 个字符。','Second Admin password updated successfully.':'二级管理员登录密码已成功更新。','Invite Codes':'邀请码管理','Assign Invite Code To':'分配邀请码给','Generate Invite Code':'生成邀请码','Code':'代码','Used':'已使用',
  'Announcements / User Notifications':'公告 / 用户通知','Send a popup announcement that appears after users log in. Users can close it with ×. Choose all users or selected users.':'发送用户登录后显示的弹窗公告。用户可以点击 × 关闭。可选择全部用户或指定用户。','Title (optional)':'标题（可选）','Recipients':'接收对象','All Users':'所有用户','Selected Users':'指定用户','Select one or more users':'选择一个或多个用户','Select one or more user accounts.':'选择一个或多个用户账户。','Message':'消息内容','Image (PNG, JPG, WEBP or GIF; maximum 1 MB)':'图片（PNG、JPG、WEBP 或 GIF；最大 1 MB）','Send Announcement':'发送公告','Clear':'清空','Refresh List':'刷新列表','Sent Announcements':'已发送公告','Announcement':'公告','Audience':'接收范围','Dismissed':'已关闭',
  'Cash Bonuses':'现金奖金','Create a cash bonus in USDT. Users can claim it once before the expiry date. Expired or already claimed bonuses cannot be claimed again.':'创建 USDT 现金奖金。用户可在到期前领取一次。已过期或已领取的奖金不能再次领取。','Bonus title':'奖金标题','Amount (USDT)':'金额 (USDT)','Expiry date and time':'到期日期和时间','Select users':'选择用户','Message (optional)':'消息（可选）','Send Cash Bonus':'发送现金奖金','Send Text Notification':'发送文字通知','Refresh Bonus History':'刷新奖金记录','User ID':'用户 ID','Title':'标题','Expiry':'到期时间','Claimed':'已领取',
  'Transactions':'交易记录','Clear Search':'清除搜索','Type':'类型','Details':'详情','Search by username, email, phone, account ID, type or status':'按用户名、邮箱、电话、账户 ID、类型或状态搜索',
@@ -493,7 +505,7 @@ const ADMIN_I18N={
  'Total Balance':'စုစုပေါင်း လက်ကျန်','USDT · Current visible user balances':'USDT · လက်ရှိမြင်ရသော User များ၏ လက်ကျန်','Total Users':'အသုံးပြုသူ စုစုပေါင်း','Registered accounts':'မှတ်ပုံတင်ထားသော အကောင့်များ','Total Income':'စုစုပေါင်း ဝင်ငွေ','USDT · vs last month':'USDT · ပြီးခဲ့သောလနှင့် နှိုင်းယှဉ်ချက်','Total Deposit':'စုစုပေါင်း Deposit','Approved · vs last month':'လက်ခံပြီး · ပြီးခဲ့သောလနှင့် နှိုင်းယှဉ်ချက်','Total Withdrawal':'စုစုပေါင်း Withdrawal','Latest products':'နောက်ဆုံးထည့်ထားသော ကုန်ပစ္စည်းများ','Manage Products':'ကုန်ပစ္စည်းများ စီမံရန်','Product Name':'ကုန်ပစ္စည်းအမည်','Price':'ဈေးနှုန်း','Profit Rate':'အမြတ်နှုန်း','VIP Level':'VIP အဆင့်','Special Task':'အထူး Task','Action':'လုပ်ဆောင်ချက်','Loading products…':'ကုန်ပစ္စည်းများ ဖွင့်နေသည်…',
  'Total User Balance (USDT)':'User များ၏ စုစုပေါင်းလက်ကျန် (USDT)','Current balances across visible users':'မြင်ရသော User များ၏ လက်ရှိလက်ကျန်','Total Deposit Income (USDT)':'စုစုပေါင်း Deposit (USDT)','Approved deposits only':'လက်ခံပြီးသော Deposit များသာ','Total Withdrawal (USDT)':'စုစုပေါင်း Withdrawal (USDT)','Approved withdrawals only':'လက်ခံပြီးသော Withdrawal များသာ','Refresh Totals':'စုစုပေါင်း ပြန်ဖွင့်ရန်','User':'User','Email / Phone':'Email / ဖုန်း','Second Admin':'Second Admin','Balance':'လက်ကျန်','Frozen':'Freeze','Credit':'Credit Score','VIP':'VIP','Actions':'လုပ်ဆောင်ချက်များ','Search users by username, email, phone or ID':'Username၊ Email၊ ဖုန်း သို့မဟုတ် ID ဖြင့် User ရှာရန်',
  'View and calculate exchange rates using the platform currency rates. Preview only — this does not change any user balance.':'ပလက်ဖောင်း၏ ငွေလဲနှုန်းများကို အသုံးပြုပြီး ငွေလဲနှုန်း ကြည့်ရှုတွက်ချက်ရန်။ ကြည့်ရှုရန်သာဖြစ်ပြီး User လက်ကျန်ကို မပြောင်းလဲပါ။','Preview only — uses the platform\'s existing currency rates. This does not change any user balance.':'ကြည့်ရှုရန်သာ — ပလက်ဖောင်း၏ လက်ရှိငွေလဲနှုန်းကို အသုံးပြုသည်။ User လက်ကျန်ကို မပြောင်းလဲပါ။','Amount':'ပမာဏ','Converted amount':'ပြောင်းလဲပြီး ပမာဏ','First currency':'မူလငွေကြေး','Second currency':'ပြောင်းလိုသော ငွေကြေး',
- 'Second Admin Management':'Second Admin စီမံခန့်ခွဲမှု','Main Admin only. Each Second Admin can see and control only users registered with that admin\'s invite code. Existing users/data are preserved.':'Main Admin သာ လုပ်ဆောင်နိုင်သည်။ Second Admin တစ်ဦးစီသည် မိမိ Invite Code ဖြင့် Register လုပ်ထားသော User များကိုသာ ကြည့်ရှုစီမံနိုင်သည်။ ရှိပြီးသား User နှင့် Data များကို မဖျက်ပါ။','Second Admin Username':'Second Admin အမည်','Password (minimum 6)':'စကားဝှက် (အနည်းဆုံး ၆ လုံး)','Create Second Admin':'Second Admin အသစ်ဖန်တီးရန်','Refresh':'ပြန်ဖွင့်ရန်','Status':'အခြေအနေ','Created':'ဖန်တီးသည့်ရက်','Invite':'ဖိတ်ခေါ်ရန်','Invite Codes':'Invite Code များ','Assign Invite Code To':'Invite Code ပေးမည့်သူ','Generate Invite Code':'Invite Code ထုတ်ရန်','Code':'Code','Used':'အသုံးပြုပြီး',
+ 'Second Admin Management':'Second Admin စီမံခန့်ခွဲမှု','Main Admin only. Each Second Admin can see and control only users registered with that admin\'s invite code. Existing users/data are preserved.':'Main Admin သာ လုပ်ဆောင်နိုင်သည်။ Second Admin တစ်ဦးစီသည် မိမိ Invite Code ဖြင့် Register လုပ်ထားသော User များကိုသာ ကြည့်ရှုစီမံနိုင်သည်။ ရှိပြီးသား User နှင့် Data များကို မဖျက်ပါ။','Second Admin Username':'Second Admin အမည်','Password (minimum 6)':'စကားဝှက် (အနည်းဆုံး ၆ လုံး)','Create Second Admin':'Second Admin အသစ်ဖန်တီးရန်','Refresh':'ပြန်ဖွင့်ရန်','Status':'အခြေအနေ','Created':'ဖန်တီးသည့်ရက်','Invite':'ဖိတ်ခေါ်ရန်','Password':'စကားဝှက်','Change Password':'Password ပြောင်းရန်','Change Second Admin Password':'Second Admin Login Password ပြောင်းရန်','New Password':'Password အသစ်','Confirm Password':'Password အတည်ပြုရန်','Set a new login password for this Second Admin. The minimum length is 6 characters.':'ဤ Second Admin အတွက် Login Password အသစ် သတ်မှတ်ပါ။ အနည်းဆုံး ၆ လုံး ရှိရပါမည်။','Enter new password':'Password အသစ် ထည့်ပါ','Re-enter new password':'Password အသစ်ကို ထပ်ထည့်ပါ','Save Password':'Password သိမ်းရန်','Passwords do not match.':'Password နှစ်ခု မတူညီပါ။','Password must be at least 6 characters.':'Password အနည်းဆုံး ၆ လုံး ရှိရပါမည်။','Second Admin password updated successfully.':'Second Admin Login Password ပြောင်းလဲပြီးပါပြီ။','Invite Codes':'Invite Code များ','Assign Invite Code To':'Invite Code ပေးမည့်သူ','Generate Invite Code':'Invite Code ထုတ်ရန်','Code':'Code','Used':'အသုံးပြုပြီး',
  'Announcements / User Notifications':'ကြေညာချက်များ / User အသိပေးချက်များ','Send a popup announcement that appears after users log in. Users can close it with ×. Choose all users or selected users.':'User Login ဝင်ပြီးနောက် ပေါ်လာမည့် Popup ကြေညာချက် ပို့ရန်။ User များသည် × ဖြင့် ပိတ်နိုင်သည်။ User အားလုံး သို့မဟုတ် ရွေးချယ်ထားသူများကို ပို့နိုင်သည်။','Title (optional)':'ခေါင်းစဉ် (မဖြစ်မနေ မဟုတ်ပါ)','Recipients':'လက်ခံမည့်သူများ','All Users':'User အားလုံး','Selected Users':'ရွေးချယ်ထားသော User များ','Select one or more users':'User တစ်ဦး သို့မဟုတ် အများကို ရွေးပါ','Select one or more user accounts.':'User အကောင့် တစ်ခု သို့မဟုတ် အများကို ရွေးပါ။','Message':'စာသား','Image (PNG, JPG, WEBP or GIF; maximum 1 MB)':'ပုံ (PNG, JPG, WEBP သို့မဟုတ် GIF၊ အများဆုံး 1 MB)','Send Announcement':'ကြေညာချက် ပို့ရန်','Clear':'ရှင်းလင်းရန်','Refresh List':'စာရင်း ပြန်ဖွင့်ရန်','Sent Announcements':'ပို့ပြီးသော ကြေညာချက်များ','Announcement':'ကြေညာချက်','Audience':'လက်ခံမည့်သူ','Dismissed':'ပိတ်ထားသူ',
  'Cash Bonuses':'ငွေသား Bonus များ','Create a cash bonus in USDT. Users can claim it once before the expiry date. Expired or already claimed bonuses cannot be claimed again.':'USDT ဖြင့် Cash Bonus ဖန်တီးရန်။ သတ်မှတ်ရက်မတိုင်မီ User တစ်ဦးလျှင် တစ်ကြိမ်သာ ရယူနိုင်သည်။ သက်တမ်းကုန်သွားသော သို့မဟုတ် ရယူပြီးသော Bonus ကို ထပ်မံရယူ၍ မရပါ။','Bonus title':'Bonus ခေါင်းစဉ်','Amount (USDT)':'ပမာဏ (USDT)','Expiry date and time':'သက်တမ်းကုန်မည့် ရက်နှင့်အချိန်','Select users':'User များ ရွေးပါ','Message (optional)':'စာသား (မဖြစ်မနေ မဟုတ်ပါ)','Send Cash Bonus':'Cash Bonus ပို့ရန်','Send Text Notification':'စာသားအသိပေးချက် ပို့ရန်','Refresh Bonus History':'Bonus မှတ်တမ်း ပြန်ဖွင့်ရန်','User ID':'User ID','Title':'ခေါင်းစဉ်','Expiry':'သက်တမ်းကုန်ချိန်','Claimed':'ရယူပြီး',
  'Clear Search':'ရှာဖွေမှု ရှင်းရန်','Type':'အမျိုးအစား','Details':'အသေးစိတ်','Search by username, email, phone, account ID, type or status':'Username၊ Email၊ ဖုန်း၊ Account ID၊ အမျိုးအစား သို့မဟုတ် အခြေအနေဖြင့် ရှာရန်',
@@ -982,6 +994,46 @@ async function loadConversation(){if(!chatSelected)return;try{const d=await api(
 if(!chatPollStarted){chatPollStarted=true;setInterval(()=>{if(!$('chat').classList.contains('hidden'))loadChatUsers()},20000)}async function sendReply(){if(!chatSelected)return alert('Select a user.');const text=$('chatInput').value.trim();if(!text)return;try{await api('/api/admin/messages',{method:'POST',body:JSON.stringify({userId:uid(chatSelected),text})});$('chatInput').value='';await loadConversation()}catch(e){alert(e.message)}}
 async function loadAudits(){try{const d=await api('/api/admin/audits');const a=d.audits||[];$('auditBody').innerHTML=a.map(x=>`<tr><td>${esc(x.action)}</td><td>${esc(x.targetUserId||'-')}</td><td>${esc(x.details||'-')}</td><td>${x.createdAt?new Date(x.createdAt).toLocaleString():'-'}</td></tr>`).join('')}catch(e){msg('auditMsg',e.message)}}
 
+let secondAdminPasswordTargetId='';
+function openSecondAdminPasswordModal(id,username){
+  if(currentAdmin?.adminType!=='superadmin')return;
+  secondAdminPasswordTargetId=String(id||'');
+  $('secondAdminPasswordMeta').textContent=String(username||'');
+  $('secondAdminNewPassword').value='';
+  $('secondAdminConfirmPassword').value='';
+  $('secondAdminPasswordMsg').innerHTML='';
+  $('secondAdminPasswordModal').classList.add('show');
+  $('secondAdminNewPassword').focus();
+}
+function closeSecondAdminPasswordModal(){
+  $('secondAdminPasswordModal').classList.remove('show');
+  $('secondAdminNewPassword').value='';
+  $('secondAdminConfirmPassword').value='';
+  $('secondAdminPasswordMsg').innerHTML='';
+  secondAdminPasswordTargetId='';
+}
+async function saveSecondAdminPassword(){
+  if(currentAdmin?.adminType!=='superadmin')return;
+  const id=secondAdminPasswordTargetId;
+  const password=$('secondAdminNewPassword').value;
+  const confirmPassword=$('secondAdminConfirmPassword').value;
+  if(!id)return msg('secondAdminPasswordMsg','Select a Second Admin first.');
+  if(password.length<6||password.length>128)return msg('secondAdminPasswordMsg','Password must be at least 6 characters.');
+  if(password!==confirmPassword)return msg('secondAdminPasswordMsg','Passwords do not match.');
+  const button=$('saveSecondAdminPasswordBtn');
+  button.disabled=true;button.textContent='Saving…';
+  try{
+    await api('/api/admin/second-admins/'+encodeURIComponent(id)+'/password',{method:'PUT',body:JSON.stringify({password})});
+    closeSecondAdminPasswordModal();
+    msg('adminMsg','Second Admin password updated successfully.',true);
+    await loadAdminManagement();
+  }catch(e){
+    msg('secondAdminPasswordMsg',e.message||'Failed to change Second Admin password');
+  }finally{
+    button.disabled=false;button.textContent='Save Password';
+  }
+}
+
 async function loadAdminManagement(){
   if(currentAdmin?.adminType!=='superadmin') return;
   try{
@@ -993,7 +1045,8 @@ async function loadAdminManagement(){
       <td>${x.createdAt?new Date(x.createdAt).toLocaleString():'-'}</td>
       <td><button class="secondary" onclick="selectInviteOwner('${esc(x._id||x.id)}')">Generate</button>
       <button class="${x.active?'danger':'success'}" onclick="setAdminStatus('${esc(x._id||x.id)}',${!x.active})">${x.active?'Disable':'Enable'}</button></td>
-    </tr>`).join('')||'<tr><td colspan="5">No second admins</td></tr>';
+       <td><button class="secondary" onclick="openSecondAdminPasswordModal('${esc(x._id||x.id)}','${esc(x.username)}')">Change Password</button></td>
+    </tr>`).join('')||'<tr><td colspan="6">No second admins</td></tr>';
     $('inviteOwner').innerHTML=secondAdmins.filter(x=>x.active).map(x=>`<option value="${esc(x._id||x.id)}">${esc(x.username)}</option>`).join('')||'<option value="">No active second admin</option>';
     $('invitesBody').innerHTML=inviteCodes.map(x=>`<tr>
       <td><b>${esc(x.code)}</b></td><td>${esc(x.ownerAdminUsername||x.ownerAdminId||'-')}</td>
