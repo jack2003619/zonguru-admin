@@ -311,7 +311,7 @@ body{min-width:320px}
 <div id="login" class="card login"><div class="login-brand"><div class="login-crown" aria-hidden="true">👑</div><strong>Zonguru Admin</strong><span>Powerful &amp; Secure</span></div><div class="admin-language-control login-language"><label for="loginLanguageSelect">Language</label><select id="loginLanguageSelect" aria-label="Admin language" onchange="setAdminLanguage(this.value)"><option value="en">English</option><option value="zh">中文</option><option value="my">မြန်မာ</option></select></div><h2>Admin Login</h2><div class="field"><label>Username</label><input id="lu" value="admin"></div><div class="field"><label>Password</label><input id="lp" type="password"></div><button class="primary" onclick="login()">Login</button><div id="loginMsg"></div></div>
 <div id="app" class="hidden">
 <header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><div class="admin-identity" id="adminIdentity" aria-label="Signed-in administrator"><span class="admin-avatar" id="adminAvatar">O</span><span class="admin-identity-meta"><small id="adminRoleLabel">Main Admin</small><strong id="adminDisplayName">Owner</strong></span></div><div class="admin-language-control header-language"><label for="headerLanguageSelect">Language</label><select id="headerLanguageSelect" aria-label="Admin language" onchange="setAdminLanguage(this.value)"><option value="en">English</option><option value="zh">中文</option><option value="my">မြန်မာ</option></select></div></header>
-<nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button><button type="button" class="sidebar-logout" onclick="logout()">Logout</button><div class="sidebar-footer"><span class="sidebar-crown" aria-hidden="true">👑</span><strong>Zonguru Admin</strong><span class="sidebar-tagline">Powerful &amp; Secure</span></div></nav>
+<nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="liveActivities" onclick="tab('liveActivities')">Live Activities</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button><button type="button" class="sidebar-logout" onclick="logout()">Logout</button><div class="sidebar-footer"><span class="sidebar-crown" aria-hidden="true">👑</span><strong>Zonguru Admin</strong><span class="sidebar-tagline">Powerful &amp; Secure</span></div></nav>
 <main>
 <section id="dashboard" class="dashboard-page hidden">
 <div class="dashboard-top">
@@ -381,6 +381,33 @@ body{min-width:320px}
 <section id="products" class="card hidden"><h3>Products & Insufficient-Balance Rules</h3><div class="notice">Safe mode: an insufficient-balance rule blocks the order and shows the shortfall. It does not create a negative balance.</div><div class="actions"><button class="primary" onclick="editProduct()">Add Product</button><button class="secondary" onclick="loadProducts()">Refresh</button></div><div id="productMsg"></div><div class="tablewrap"><table><thead><tr><th>Product</th><th>Price</th><th>Profit Amount</th><th>VIP</th><th>Insufficient Rule</th><th>Action</th></tr></thead><tbody id="productsBody"></tbody></table></div></section>
 <section id="chat" class="card hidden"><h3>Customer Service <span id="chatNoticeBadge" class="pill" style="display:none;background:#ffe1e1;color:#9b2020">New messages</span></h3><div id="chatNotice" class="notice" style="display:none"></div><div class="chat"><div><input id="chatSearch" placeholder="Search user" oninput="renderChatUsers()" style="width:100%;padding:10px;border:1px solid #ddd6ee;border-radius:9px"><div id="chatUsers" class="chatUsers" style="margin-top:8px"></div></div><div><div id="chatHead" class="stat">Select a user</div><div id="chatBody" class="chatBody"></div><div class="actions"><textarea id="chatInput" placeholder="Reply..." style="flex:1;min-height:60px"></textarea><button class="primary" onclick="sendReply()">Send</button></div></div></div></section>
 <section id="audits" class="card hidden"><h3>Audit Logs</h3><div id="auditMsg"></div><div class="tablewrap"><table><thead><tr><th>Action</th><th>User</th><th>Details</th><th>Date</th></tr></thead><tbody id="auditBody"></tbody></table></div></section>
+
+<section id="liveActivities" class="card hidden">
+<h3>Live Activities</h3>
+<div class="notice">Manage the scrolling ticker shown below the Zonguru logo. Manually entered items are marked PROMO on the platform so they are not confused with verified withdrawals or claimed prizes.</div>
+<div class="card" style="border:1px solid #ddd6ee;background:#faf8ff">
+ <h4 style="margin:0 0 12px">Ticker controls</h4>
+ <div class="grid">
+  <div class="field"><label><input id="liveActivityEnabled" type="checkbox" checked style="width:auto;margin-right:7px">Show Live Activities on platform</label></div>
+  <div class="field"><label for="liveActivitySpeed">Animation duration (seconds per cycle · higher = slower)</label><input id="liveActivitySpeed" type="number" min="30" max="300" step="1" value="90"></div>
+ </div>
+ <div class="actions"><button class="primary" onclick="saveLiveActivitySettings()">Save ticker settings</button><button class="secondary" onclick="loadLiveActivitiesAdmin()">Refresh</button></div>
+ <div id="liveActivitySettingsMsg"></div>
+</div>
+<div class="card" style="border:1px solid #ddd6ee">
+ <h4 id="liveActivityFormTitle" style="margin:0 0 12px">Add a display item</h4>
+ <div class="grid">
+  <div class="field"><label for="liveActivityPhone">Phone number</label><input id="liveActivityPhone" maxlength="40" placeholder="+1 202 555 0147"></div>
+  <div class="field"><label for="liveActivityAmount">Amount / display value</label><input id="liveActivityAmount" maxlength="50" placeholder="250.50 USDT"></div>
+ </div>
+ <div class="field" style="margin-top:10px"><label for="liveActivityMessage">Display text</label><input id="liveActivityMessage" maxlength="180" placeholder="Congratulations!"></div>
+ <div class="actions"><button class="primary" onclick="saveLiveActivityItem()">Save item</button><button class="secondary" onclick="clearLiveActivityForm()">Clear form</button></div>
+ <div id="liveActivityFormMsg"></div>
+</div>
+<div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:12px 0"><strong>Total items: <span id="liveActivityTotal">0</span></strong><strong>Active: <span id="liveActivityActive">0</span></strong></div>
+<div id="liveActivityListMsg"></div>
+<div class="tablewrap"><table><thead><tr><th>Phone</th><th>Display text</th><th>Amount</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody id="liveActivitiesBody"></tbody></table></div>
+</section>
 <section id="eventsSettings" class="card hidden"><h3>Events Content</h3><div class="notice">Main Admin and Second Admin accounts may edit Events title, explanation and image only. Other platform settings remain restricted.</div><div class="notice">Main Admin only. Update the Events title, explanation and image. Saved changes appear on the platform when users open Events.</div><div class="field"><label>Events title</label><input id="eventTitleInput" maxlength="120" placeholder="Salary List"></div><div class="field"><label>Events text / salary explanation</label><textarea id="eventTextInput" rows="8" maxlength="8000" style="width:100%;border:1px solid #ddd6ee;border-radius:9px;padding:10px"></textarea></div><div class="field"><label>Events image (PNG, JPG, WEBP or GIF; maximum 10 MB)</label><input id="eventImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewEventImage()"><img id="eventImagePreview" alt="Events image preview" style="display:none;max-width:100%;max-height:260px;object-fit:contain;margin-top:8px;border-radius:10px"><button type="button" class="secondary" onclick="clearEventImage()">Remove image</button></div><div class="actions"><button class="primary" onclick="saveEventsContent()">Save Events Content</button><button class="secondary" onclick="loadEventsContent()">Refresh Events</button></div><div id="eventsContentMsg"></div></section>
 <section id="platform" class="card hidden">
 <h3>Platform Settings</h3>
@@ -461,7 +488,7 @@ body{min-width:320px}
 
 <div id="proofModal" class="modal" onclick="if(event.target===this)closeProof()"><div class="modalbox" style="width:min(900px,100%);max-height:94vh"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px"><h3>Deposit Payment Screenshot</h3><button class="secondary" onclick="closeProof()">Close</button></div><div id="proofModalMsg" class="muted"></div><img id="proofModalImage" alt="Deposit payment proof" style="display:none;max-width:100%;max-height:75vh;object-fit:contain;margin:0 auto;border:1px solid #eee;border-radius:10px"></div></div>
 <script>
-const API='https://zonguru-admin.onrender.com';let token=localStorage.getItem('zonguru_admin_token')||'';let users=[],products=[],selected=null,chatSelected=null,chatList=[],currentAdmin=null,secondAdmins=[],inviteCodes=[];
+const API='https://zonguru-admin.onrender.com';let token=localStorage.getItem('zonguru_admin_token')||'';let liveActivityItems=[],editingLiveActivityId=null;let users=[],products=[],selected=null,chatSelected=null,chatList=[],currentAdmin=null,secondAdmins=[],inviteCodes=[];
 const currencyRates={USDT:1,USD:1,MXN:18.5,EUR:0.86,GBP:0.75,CAD:1.38,AUD:1.51,JPY:148,CNY:7.1,SGD:1.28,THB:32.5,MYR:4.25,BRL:5.35,INR:88,EGP:51.75,ARS:1400,PKR:280};
 const currencyLabels={USDT:'USDT',USD:'USD',MXN:'MXN',EUR:'EUR',GBP:'GBP',CAD:'CAD',AUD:'AUD',JPY:'JPY',CNY:'CNY',SGD:'SGD',THB:'THB',MYR:'MYR',BRL:'BRL',INR:'INR',EGP:'EGP',ARS:'ARS',PKR:'PKR'};
 function initAdminCurrencyConverter(){
@@ -668,8 +695,8 @@ async function start(){
 }
 function tab(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
-  ['dashboard','users','transactions','announcements','products','chat','audits','admins','platform','eventsSettings','bonuses','currencyRatesPage'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
-  if(t==='dashboard')loadDashboard();if(t==='users')loadUsers();if(t==='bonuses'){populateBonusRecipients();loadBonuses();}if(t==='announcements')loadAnnouncements();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();loadPlatformBranding();}if(t==='eventsSettings')loadEventsContent();if(t==='products')loadProducts();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
+  ['dashboard','users','transactions','announcements','products','liveActivities','chat','audits','admins','platform','eventsSettings','bonuses','currencyRatesPage'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
+  if(t==='dashboard')loadDashboard();if(t==='users')loadUsers();if(t==='bonuses'){populateBonusRecipients();loadBonuses();}if(t==='announcements')loadAnnouncements();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();loadPlatformBranding();}if(t==='eventsSettings')loadEventsContent();if(t==='products')loadProducts();if(t==='liveActivities')loadLiveActivitiesAdmin();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
 }
 
 function setDashboardTrend(id,current,previous){
@@ -1147,6 +1174,46 @@ async function deleteAnnouncement(id){
  if(!confirm('Delete this announcement? It will no longer appear for users.'))return;
  try{await api('/api/admin/announcements/'+encodeURIComponent(id),{method:'DELETE'});await loadAnnouncements();msg('announcementMsg','Announcement deleted.',true)}catch(e){msg('announcementMsg',e.message)}
 }
+
+async function loadLiveActivitiesAdmin(){
+ try{
+  const d=await api('/api/admin/live-activities');
+  const settings=d.settings||{};
+  $('liveActivityEnabled').checked=settings.enabled!==false;
+  $('liveActivitySpeed').value=Number(settings.speedSeconds||90);
+  liveActivityItems=Array.isArray(d.items)?d.items:[];
+  $('liveActivityTotal').textContent=String(Number(d.total??liveActivityItems.length));
+  $('liveActivityActive').textContent=String(Number(d.activeCount??liveActivityItems.filter(x=>x.active!==false).length));
+  $('liveActivitiesBody').innerHTML=liveActivityItems.map(x=>'<tr><td><b>'+esc(x.phone||'-')+'</b></td><td>'+esc(x.message||'-')+'</td><td>'+esc(x.amountText||'-')+'</td><td>'+(x.active===false?'<span class="pill">Disabled</span>':'<span class="pill" style="background:#dff7e8;color:#18733c">Active</span>')+'</td><td>'+esc(x.createdAt?new Date(x.createdAt).toLocaleString():'-')+'</td><td><button class="secondary" onclick="editLiveActivity(\\''+esc(x._id)+'\\')">Edit</button> <button class="secondary" onclick="toggleLiveActivity(\\''+esc(x._id)+'\\','+(x.active===false?'true':'false')+')">'+(x.active===false?'Enable':'Disable')+'</button> <button class="danger" onclick="deleteLiveActivity(\\''+esc(x._id)+'\\')">Delete</button></td></tr>').join('')||'<tr><td colspan="6">No manual display items yet.</td></tr>';
+ }catch(e){msg('liveActivityListMsg',e.message)}
+}
+async function saveLiveActivitySettings(){
+ const enabled=$('liveActivityEnabled').checked,speedSeconds=Number($('liveActivitySpeed').value);
+ if(!Number.isInteger(speedSeconds)||speedSeconds<30||speedSeconds>300){msg('liveActivitySettingsMsg','Enter a duration from 30 to 300 seconds.');return}
+ try{await api('/api/admin/live-activities/settings',{method:'PATCH',body:JSON.stringify({enabled,speedSeconds})});msg('liveActivitySettingsMsg','Ticker settings saved.',true)}catch(e){msg('liveActivitySettingsMsg',e.message)}
+}
+function clearLiveActivityForm(){
+ editingLiveActivityId=null;$('liveActivityPhone').value='';$('liveActivityMessage').value='';$('liveActivityAmount').value='';$('liveActivityFormTitle').textContent='Add a display item';
+}
+function editLiveActivity(id){
+ const x=liveActivityItems.find(item=>String(item._id)===String(id));if(!x)return;
+ editingLiveActivityId=String(id);$('liveActivityPhone').value=x.phone||'';$('liveActivityMessage').value=x.message||'';$('liveActivityAmount').value=x.amountText||'';
+ $('liveActivityFormTitle').textContent='Edit display item';$('liveActivityPhone').scrollIntoView({behavior:'smooth',block:'center'});
+}
+async function saveLiveActivityItem(){
+ const phone=$('liveActivityPhone').value.trim(),message=$('liveActivityMessage').value.trim(),amountText=$('liveActivityAmount').value.trim();
+ if(!phone||!message||!amountText){msg('liveActivityFormMsg','Phone number, display text and amount are all required.');return}
+ const path=editingLiveActivityId?'/api/admin/live-activities/'+encodeURIComponent(editingLiveActivityId):'/api/admin/live-activities';
+ try{await api(path,{method:editingLiveActivityId?'PATCH':'POST',body:JSON.stringify({phone,message,amountText})});clearLiveActivityForm();await loadLiveActivitiesAdmin();msg('liveActivityFormMsg','Display item saved.',true)}catch(e){msg('liveActivityFormMsg',e.message)}
+}
+async function toggleLiveActivity(id,active){
+ try{await api('/api/admin/live-activities/'+encodeURIComponent(id),{method:'PATCH',body:JSON.stringify({active})});await loadLiveActivitiesAdmin()}catch(e){msg('liveActivityListMsg',e.message)}
+}
+async function deleteLiveActivity(id){
+ if(!confirm('Delete this display item?'))return;
+ try{await api('/api/admin/live-activities/'+encodeURIComponent(id),{method:'DELETE'});if(editingLiveActivityId===String(id))clearLiveActivityForm();await loadLiveActivitiesAdmin()}catch(e){msg('liveActivityListMsg',e.message)}
+}
+
 try{initAdminCurrencyConverter()}catch(e){console.error('Currency converter init failed',e)}
 setInterval(()=>{try{pollTransactionNotice()}catch(e){console.error('Transaction notice polling failed',e)}},20000);
 $('lp').addEventListener('keydown',e=>{if(e.key==='Enter')login()});initAdminLanguage();
