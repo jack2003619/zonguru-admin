@@ -1627,7 +1627,7 @@ const AdminLiveActivityItem = mongoose.model('AdminLiveActivityItem', liveActivi
 const liveActivitySettingsSchema = new mongoose.Schema({
   key: { type: String, default: 'global', unique: true },
   enabled: { type: Boolean, default: true },
-  speedSeconds: { type: Number, default: 30, min: 15, max: 45 },
+  speedSeconds: { type: Number, default: 120, min: 30, max: 300 },
   updatedAt: { type: Date, default: Date.now }
 }, { collection: 'live_activity_settings', strict: false });
 const AdminLiveActivitySettings = mongoose.model('AdminLiveActivitySettings', liveActivitySettingsSchema);
@@ -1642,7 +1642,7 @@ app.get('/api/admin/live-activities', auth, async (req, res) => {
       AdminLiveActivityItem.countDocuments({ active: { $ne: false } })
     ]);
     res.set('Cache-Control', 'no-store');
-    res.json({ success: true, items, settings: { enabled: setting?.enabled !== false, speedSeconds: Math.max(15, Math.min(45, Number(setting?.speedSeconds || 30))) }, total, activeCount });
+    res.json({ success: true, items, settings: { enabled: setting?.enabled !== false, speedSeconds: Math.max(30, Math.min(300, Number(setting?.speedSeconds || 120))) }, total, activeCount });
   } catch (error) {
     console.error('List live activities:', error.stack || error.message);
     res.status(500).json({ success: false, message: 'Unable to load live activities' });
@@ -1654,7 +1654,7 @@ app.patch('/api/admin/live-activities/settings', auth, async (req, res) => {
     if (!isSuperAdmin(req)) return res.status(403).json({ success: false, message: 'Main admin only' });
     const enabled = req.body?.enabled;
     const speedSeconds = Number(req.body?.speedSeconds);
-    if (typeof enabled !== 'boolean' || !Number.isInteger(speedSeconds) || speedSeconds < 15 || speedSeconds > 45)
+    if (typeof enabled !== 'boolean' || !Number.isInteger(speedSeconds) || speedSeconds < 30 || speedSeconds > 300)
       return res.status(400).json({ success: false, message: 'Invalid ticker settings' });
     const settings = await AdminLiveActivitySettings.findOneAndUpdate(
       { key: 'global' },
