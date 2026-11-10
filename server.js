@@ -574,6 +574,67 @@ app.put('/api/admin/telegram-support',auth,async(req,res)=>{
   }catch(e){res.status(500).json({success:false,message:'Failed to save Telegram CS account'})}
 });
 
+
+const DEFAULT_PLATFORM_BRANDING={name:'Zonguru',logoDataUrl:''};
+const MAX_PLATFORM_LOGO_BYTES=2*1024*1024;
+function cleanPlatformBranding(value){
+  const stored=value&&typeof value==='object'?value:{};
+  const name=String(stored.name||DEFAULT_PLATFORM_BRANDING.name).trim().slice(0,40)||DEFAULT_PLATFORM_BRANDING.name;
+  const logoDataUrl=typeof stored.logoDataUrl==='string'&&/^data:image\/(png|jpeg|webp|gif);base64,/i.test(stored.logoDataUrl)?stored.logoDataUrl:'';
+  return {name,logoDataUrl};
+}
+app.get('/api/public/branding',async(req,res)=>{
+  res.set('Cache-Control','no-store, no-cache, must-revalidate');
+  try{
+    const setting=await PlatformSetting.findOne({key:'platform_branding'}).lean();
+    res.json({success:true,branding:cleanPlatformBranding(setting?.value)});
+  }catch(error){
+    console.error('Public platform branding:',error.message);
+    res.json({success:true,branding:DEFAULT_PLATFORM_BRANDING});
+  }
+});
+app.get('/api/admin/branding',auth,async(req,res)=>{
+  if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
+  try{
+    const setting=await PlatformSetting.findOne({key:'platform_branding'}).lean();
+    res.set('Cache-Control','no-store');
+    res.json({success:true,branding:cleanPlatformBranding(setting?.value)});
+  }catch(error){
+    console.error('Load platform branding:',error.message);
+    res.status(500).json({success:false,message:'Failed to load platform branding'});
+  }
+});
+app.put('/api/admin/branding',auth,async(req,res)=>{
+  if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
+  try{
+    const body=req.body&&typeof req.body==='object'?req.body:{};
+    const name=String(body.name||'').trim();
+    if(name.length<2||name.length>40)
+      return res.status(400).json({success:false,message:'Platform name must be 2 to 40 characters'});
+    const current=await PlatformSetting.findOne({key:'platform_branding'}).lean();
+    let logoDataUrl=typeof body.logoDataUrl==='string'?body.logoDataUrl.trim():String(current?.value?.logoDataUrl||'');
+    if(logoDataUrl){
+      const match=logoDataUrl.match(/^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/]+={0,2})$/i);
+      if(!match)return res.status(400).json({success:false,message:'Logo must be PNG, JPG, WEBP or GIF'});
+      const bytes=Buffer.from(match[2],'base64');
+      if(!bytes.length||bytes.length>MAX_PLATFORM_LOGO_BYTES)
+        return res.status(400).json({success:false,message:'Logo image must be no larger than 2 MB'});
+    }
+    const branding={name,logoDataUrl};
+    await PlatformSetting.findOneAndUpdate(
+      {key:'platform_branding'},
+      {$set:{value:branding,updatedAt:new Date()}},
+      {upsert:true,new:true,setDefaultsOnInsert:true}
+    );
+    await audit(req.admin,'PLATFORM_BRANDING_UPDATE','Updated platform name and logo');
+    res.set('Cache-Control','no-store');
+    res.json({success:true,branding,message:'Platform branding saved'});
+  }catch(error){
+    console.error('Save platform branding:',error.stack||error.message);
+    res.status(500).json({success:false,message:'Failed to save platform branding'});
+  }
+});
+
 const DEPOSIT_ADDRESS_DEFAULTS={'USDT-TRC20':'TS3fFhpyCECAtEnV7gurRyojgKVznieun5','USDT-ERC20':'0x84a872810ab213eacb8ac8e9e962faf34cd9a72b','ETH-ERC20':'0x84a872810ab213eacb8ac8e9e962faf34cd9a72b','BTC-BTC':'176xzWWVLW5KsHoikVPatuinJJ6vMrvifW'};
 app.get('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});const s=await PlatformSetting.findOne({key:'deposit_addresses'}).lean();res.json({success:true,addresses:{...DEPOSIT_ADDRESS_DEFAULTS,...(s?.value||{})}})}catch(e){console.error('Load deposit addresses:',e.message);res.status(500).json({success:false,message:'Failed to load deposit addresses'})}});
 app.put('/api/admin/deposit-addresses', auth, async (req,res)=>{try{if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});const body=req.body||{};const addresses={};for(const k of Object.keys(DEPOSIT_ADDRESS_DEFAULTS)){const v=String(body[k]??'').trim();if(!v)return res.status(400).json({success:false,message:'All deposit addresses are required.'});addresses[k]=v}const s=await PlatformSetting.findOneAndUpdate({key:'deposit_addresses'},{$set:{value:addresses,updatedAt:new Date()}},{upsert:true,new:true,setDefaultsOnInsert:true});await audit(req.admin,'DEPOSIT_ADDRESSES_UPDATE','Updated all deposit addresses');res.json({success:true,addresses:s.value})}catch(e){console.error('Save deposit addresses:',e.stack||e.message);res.status(500).json({success:false,message:'Failed to save deposit addresses'})}});
