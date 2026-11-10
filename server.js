@@ -483,6 +483,36 @@ app.get('/api/admin/second-admins', auth, async (req, res) => {
   }
 });
 
+app.put('/api/admin/second-admins/:id/password', auth, async (req, res) => {
+  try {
+    if (!isSuperAdmin(req)) return res.status(403).json({ success: false, message: 'Main admin only' });
+    if (!mongoose.isValidObjectId(req.params.id))
+      return res.status(400).json({ success: false, message: 'Invalid admin id' });
+
+    const password = String(req.body?.password ?? '');
+    if (password.length < 6 || password.length > 128)
+      return res.status(400).json({ success: false, message: 'Password must be 6-128 characters' });
+
+    const account = await AdminAccount.findById(req.params.id);
+    if (!account) return res.status(404).json({ success: false, message: 'Second admin not found' });
+    if ((account.adminType || 'second_admin') !== 'second_admin')
+      return res.status(403).json({ success: false, message: 'Only Second Admin passwords can be changed here' });
+
+    account.passwordHash = await hashPassword(password);
+    await account.save();
+    await audit(req.admin, 'SECOND_ADMIN_PASSWORD_RESET', 'Reset login password for Second Admin ' + account.username);
+
+    res.json({
+      success: true,
+      message: 'Second Admin password updated successfully',
+      admin: { id: String(account._id), username: account.username }
+    });
+  } catch (error) {
+    console.error('Second admin password reset:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to change Second Admin password' });
+  }
+});
+
 app.post('/api/admin/invite-codes', auth, async (req, res) => {
   try {
     if (!isSuperAdmin(req)) return res.status(403).json({ success: false, message: 'Main admin only' });
