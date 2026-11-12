@@ -311,7 +311,7 @@ body{min-width:320px}
 <div id="login" class="card login"><div class="login-brand"><div class="login-crown" aria-hidden="true">👑</div><strong>Zonguru Admin</strong><span>Powerful &amp; Secure</span></div><div class="admin-language-control login-language"><label for="loginLanguageSelect">Language</label><select id="loginLanguageSelect" aria-label="Admin language" onchange="setAdminLanguage(this.value)"><option value="en">English</option><option value="zh">中文</option><option value="my">မြန်မာ</option></select></div><h2>Admin Login</h2><div class="field"><label>Username</label><input id="lu" value="admin"></div><div class="field"><label>Password</label><input id="lp" type="password"></div><button class="primary" onclick="login()">Login</button><div id="loginMsg"></div></div>
 <div id="app" class="hidden">
 <header><div><h1>Zonguru Admin</h1><div class="sub">Control Center</div></div><div class="admin-identity" id="adminIdentity" aria-label="Signed-in administrator"><span class="admin-avatar" id="adminAvatar">O</span><span class="admin-identity-meta"><small id="adminRoleLabel">Main Admin</small><strong id="adminDisplayName">Owner</strong></span></div><div class="admin-language-control header-language"><label for="headerLanguageSelect">Language</label><select id="headerLanguageSelect" aria-label="Admin language" onchange="setAdminLanguage(this.value)"><option value="en">English</option><option value="zh">中文</option><option value="my">မြန်မာ</option></select></div></header>
-<nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="liveActivities" onclick="tab('liveActivities')">Live Activities</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button><button type="button" class="sidebar-logout" onclick="logout()">Logout</button><div class="sidebar-footer"><span class="sidebar-crown" aria-hidden="true">👑</span><strong>Zonguru Admin</strong><span class="sidebar-tagline">Powerful &amp; Secure</span></div></nav>
+<nav class="tabs"><div class="sidebar-brand"><span class="brand-mark">Z</span><span>Zonguru</span></div><button data-t="dashboard" onclick="tab('dashboard')">Dashboard</button><button data-t="users" onclick="tab('users')">Users</button><button data-t="bonuses" onclick="tab('bonuses')">Bonuses</button><button id="transactionsTab" data-t="transactions" onclick="tab('transactions')" style="position:relative">Transactions <span id="transactionsNoticeBadge" aria-label="New transactions" style="display:none;position:absolute;top:-7px;right:-7px;min-width:19px;height:19px;padding:0 5px;box-sizing:border-box;border-radius:999px;background:#e11d48;color:#fff;font-size:12px;font-weight:800;line-height:19px;text-align:center;box-shadow:0 0 0 2px #fff">0</span></button><button data-t="announcements" onclick="tab('announcements')">Announcements</button><button data-t="products" onclick="tab('products')">Products / Tasks</button><button data-t="liveActivities" onclick="tab('liveActivities')">Live Activities</button><button data-t="chat" onclick="tab('chat')">Customer Service</button><button data-t="audits" onclick="tab('audits')">Audit Logs</button><button id="adminTab" data-t="admins" class="hidden" onclick="tab('admins')">Second Admins</button><button id="platformTab" data-t="platform" class="hidden" onclick="tab('platform')">Platform Settings</button><button id="eventsSettingsTab" data-t="eventsSettings" onclick="tab('eventsSettings')">Events Content</button><button id="vipChannelTab" class="hidden" data-t="vipChannel" onclick="tab('vipChannel')">VIP Channel</button><button data-t="currencyRatesPage" onclick="tab(&quot;currencyRatesPage&quot;)">Currency Converter</button><button type="button" class="sidebar-logout" onclick="logout()">Logout</button><div class="sidebar-footer"><span class="sidebar-crown" aria-hidden="true">👑</span><strong>Zonguru Admin</strong><span class="sidebar-tagline">Powerful &amp; Secure</span></div></nav>
 <main>
 <section id="dashboard" class="dashboard-page hidden">
 <div class="dashboard-top">
@@ -409,6 +409,23 @@ body{min-width:320px}
 <div class="tablewrap"><table><thead><tr><th>Phone</th><th>Display text</th><th>Amount</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead><tbody id="liveActivitiesBody"></tbody></table></div>
 </section>
 <section id="eventsSettings" class="card hidden"><h3>Events Content</h3><div class="notice">Main Admin and Second Admin accounts may edit Events title, explanation and image only. Other platform settings remain restricted.</div><div class="notice">Main Admin only. Update the Events title, explanation and image. Saved changes appear on the platform when users open Events.</div><div class="field"><label>Events title</label><input id="eventTitleInput" maxlength="120" placeholder="Salary List"></div><div class="field"><label>Events text / salary explanation</label><textarea id="eventTextInput" rows="8" maxlength="8000" style="width:100%;border:1px solid #ddd6ee;border-radius:9px;padding:10px"></textarea></div><div class="field"><label>Events image (PNG, JPG, WEBP or GIF; maximum 10 MB)</label><input id="eventImageInput" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="previewEventImage()"><img id="eventImagePreview" alt="Events image preview" style="display:none;max-width:100%;max-height:260px;object-fit:contain;margin-top:8px;border-radius:10px"><button type="button" class="secondary" onclick="clearEventImage()">Remove image</button></div><div class="actions"><button class="primary" onclick="saveEventsContent()">Save Events Content</button><button class="secondary" onclick="loadEventsContent()">Refresh Events</button></div><div id="eventsContentMsg"></div></section>
+
+<section id="vipChannel" class="card hidden">
+<h3>VIP Channel Content</h3>
+<div class="notice">Main Admin only. Add and manage the banner, entrance tiles and gallery images shown on the VIP Channel Girl page. Images are compressed in your browser before upload; up to 24 images are supported.</div>
+<div class="grid">
+  <div class="field"><label for="vipChannelType">Content type</label><select id="vipChannelType"><option value="banner">Top banner</option><option value="entry">Entrance tile</option><option value="gallery">Gallery image</option></select></div>
+  <div class="field"><label for="vipChannelTitle">Title</label><input id="vipChannelTitle" maxlength="120" placeholder="Enter a title"></div>
+  <div class="field"><label for="vipChannelCaption">Caption / description</label><input id="vipChannelCaption" maxlength="240" placeholder="Optional short description"></div>
+  <div class="field"><label for="vipChannelSortOrder">Display order</label><input id="vipChannelSortOrder" type="number" min="0" max="9999" step="1" value="0"></div>
+  <div class="field"><label for="vipChannelImageInput">Image (PNG, JPG or WEBP)</label><input id="vipChannelImageInput" type="file" accept="image/png,image/jpeg,image/webp" onchange="previewVipChannelImage()"><img id="vipChannelImagePreview" alt="VIP Channel image preview" style="display:none;max-width:100%;max-height:220px;object-fit:contain;margin-top:8px;border-radius:10px;background:#111"></div>
+  <div class="field"><label><input id="vipChannelActive" type="checkbox" checked> Active / visible on platform</label></div>
+</div>
+<div class="actions"><button class="primary" type="button" onclick="saveVipChannelItem()">Save Image</button><button class="secondary" type="button" onclick="clearVipChannelForm()">Clear Form</button><button class="secondary" type="button" onclick="loadVipChannelAdmin()">Refresh List</button></div>
+<div id="vipChannelMsg"></div>
+<h3 style="margin-top:22px">Saved VIP Channel Images</h3>
+<div class="tablewrap"><table><thead><tr><th>Type</th><th>Preview</th><th>Title</th><th>Order</th><th>Status</th><th>Actions</th></tr></thead><tbody id="vipChannelItemsBody"><tr><td colspan="6">Open this tab to load saved images.</td></tr></tbody></table></div>
+</section>
 <section id="platform" class="card hidden">
 <h3>Platform Settings</h3>
 <div class="notice">Main Admin only. Changes are stored in the shared platform settings used by the user side.</div>
@@ -488,7 +505,7 @@ body{min-width:320px}
 
 <div id="proofModal" class="modal" onclick="if(event.target===this)closeProof()"><div class="modalbox" style="width:min(900px,100%);max-height:94vh"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px"><h3>Deposit Payment Screenshot</h3><button class="secondary" onclick="closeProof()">Close</button></div><div id="proofModalMsg" class="muted"></div><img id="proofModalImage" alt="Deposit payment proof" style="display:none;max-width:100%;max-height:75vh;object-fit:contain;margin:0 auto;border:1px solid #eee;border-radius:10px"></div></div>
 <script>
-const API='https://zonguru-admin.onrender.com';let token=localStorage.getItem('zonguru_admin_token')||'';let liveActivityItems=[],editingLiveActivityId=null;let users=[],products=[],selected=null,chatSelected=null,chatList=[],currentAdmin=null,secondAdmins=[],inviteCodes=[];
+const API='https://zonguru-vip-staging-admin-api.onrender.com';let token=localStorage.getItem('zonguru_admin_token')||'';let liveActivityItems=[],editingLiveActivityId=null;let users=[],products=[],selected=null,chatSelected=null,chatList=[],currentAdmin=null,secondAdmins=[],inviteCodes=[];
 const currencyRates={USDT:1,USD:1,MXN:18.5,EUR:0.86,GBP:0.75,CAD:1.38,AUD:1.51,JPY:148,CNY:7.1,SGD:1.28,THB:32.5,MYR:4.25,BRL:5.35,INR:88,EGP:51.75,ARS:1400,PKR:280};
 const currencyLabels={USDT:'USDT',USD:'USD',MXN:'MXN',EUR:'EUR',GBP:'GBP',CAD:'CAD',AUD:'AUD',JPY:'JPY',CNY:'CNY',SGD:'SGD',THB:'THB',MYR:'MYR',BRL:'BRL',INR:'INR',EGP:'EGP',ARS:'ARS',PKR:'PKR'};
 function initAdminCurrencyConverter(){
@@ -548,6 +565,11 @@ const ADMIN_I18N={
  }
 };
 let adminLanguage=localStorage.getItem(ADMIN_LANGUAGE_KEY)||'en';
+Object.assign(ADMIN_I18N.zh,{Hidden:'已隐藏'});
+Object.assign(ADMIN_I18N.my,{Hidden:'ဖျောက်ထားသည်'});
+Object.assign(ADMIN_I18N.zh,{"VIP Channel Content":"VIP 频道内容","Main Admin only. Add and manage the banner, entrance tiles and gallery images shown on the VIP Channel Girl page. Images are compressed in your browser before upload; up to 24 images are supported.":"仅限主管理员。添加和管理 VIP 女士频道页面的横幅、入口图片和图库图片。上传前会在浏览器中压缩图片，最多支持 24 张。","Content type":"内容类型","Top banner":"顶部横幅","Entrance tile":"入口图片","Gallery image":"图库图片","Title":"标题","Caption / description":"说明 / 描述","Display order":"显示顺序","Image (PNG, JPG or WEBP)":"图片（PNG、JPG 或 WEBP）","Active / visible on platform":"启用 / 在平台显示","Save Image":"保存图片","Clear Form":"清空表单","Refresh List":"刷新列表","Saved VIP Channel Images":"已保存的 VIP 频道图片","Open this tab to load saved images.":"打开此标签页以加载已保存的图片。","No VIP Channel images have been added yet.":"尚未添加 VIP 频道图片。","Preview":"预览","Order":"顺序","Edit":"编辑","Delete":"删除","Image ready. It was compressed for safe storage.":"图片已准备好，并已压缩以便安全存储。","Choose a PNG, JPG or WEBP image.":"请选择 PNG、JPG 或 WEBP 图片。","Unable to read image.":"无法读取图片。","Unable to process image.":"无法处理图片。","Image is too large after compression. Please choose a smaller image.":"压缩后图片仍然过大，请选择较小的图片。","Enter a title.":"请输入标题。","Choose an image first.":"请先选择图片。","Delete this VIP Channel image?":"确定删除这张 VIP 频道图片吗？","VIP Channel image saved successfully.":"VIP 频道图片已成功保存。","VIP Channel image deleted.":"VIP 频道图片已删除。","Unable to load VIP Channel images.":"无法加载 VIP 频道图片。","Unable to save VIP Channel image.":"无法保存 VIP 频道图片。","Editing:":"正在编辑：","Choose a valid content type":"请选择有效的内容类型","Title is required and text must be within the allowed length":"必须填写标题，文本长度也必须符合限制。","Title is required and must be 120 characters or fewer":"必须填写标题，且不能超过 120 个字符。","Caption must be 240 characters or fewer":"说明不能超过 240 个字符。","Image must be PNG, JPG or WEBP and no larger than 500 KB after compression":"图片必须为 PNG、JPG 或 WEBP，压缩后不得超过 500 KB。","Sort order must be between 0 and 9999":"显示顺序必须在 0 到 9999 之间。","VIP Channel supports up to 24 images":"VIP 频道最多支持 24 张图片。","Invalid image id":"图片 ID 无效。","VIP Channel image not found":"未找到 VIP 频道图片。","Unable to update VIP Channel image":"无法更新 VIP 频道图片。","Unable to delete VIP Channel image":"无法删除 VIP 频道图片。"});
+Object.assign(ADMIN_I18N.my,{"VIP Channel Content":"VIP Channel အကြောင်းအရာများ","Main Admin only. Add and manage the banner, entrance tiles and gallery images shown on the VIP Channel Girl page. Images are compressed in your browser before upload; up to 24 images are supported.":"Main Admin သာ လုပ်ဆောင်နိုင်သည်။ VIP Channel Girl စာမျက်နှာတွင် ပြသမည့် Banner၊ Entrance ပုံများနှင့် Gallery ပုံများကို ထည့်သွင်းစီမံနိုင်သည်။ Upload မလုပ်မီ Browser တွင် ပုံချုံ့ပေးမည်။ ပုံ ၂၄ ပုံအထိ ထည့်နိုင်သည်။","Content type":"အကြောင်းအရာအမျိုးအစား","Top banner":"အပေါ်ဆုံး Banner","Entrance tile":"ဝင်ပေါက်ပုံ","Gallery image":"Gallery ပုံ","Title":"ခေါင်းစဉ်","Caption / description":"စာတန်း / ရှင်းလင်းချက်","Display order":"ပြသမည့်အစီအစဉ်","Image (PNG, JPG or WEBP)":"ပုံ (PNG၊ JPG သို့မဟုတ် WEBP)","Active / visible on platform":"အသုံးပြုမည် / Platform တွင် ပြသမည်","Save Image":"ပုံသိမ်းရန်","Clear Form":"Form ရှင်းရန်","Refresh List":"စာရင်း ပြန်ဖွင့်ရန်","Saved VIP Channel Images":"သိမ်းဆည်းထားသော VIP Channel ပုံများ","Open this tab to load saved images.":"သိမ်းထားသောပုံများကို ဖွင့်ရန် ဤ Tab ကို နှိပ်ပါ။","No VIP Channel images have been added yet.":"VIP Channel ပုံများ မထည့်ရသေးပါ။","Preview":"အစမ်းမြင်ကွင်း","Order":"အစီအစဉ်","Edit":"ပြင်ရန်","Delete":"ဖျက်ရန်","Image ready. It was compressed for safe storage.":"ပုံအသင့်ဖြစ်ပါပြီ။ သိမ်းဆည်းရန်အတွက် ပုံချုံ့ပြီးပါပြီ။","Choose a PNG, JPG or WEBP image.":"PNG၊ JPG သို့မဟုတ် WEBP ပုံကို ရွေးပါ။","Unable to read image.":"ပုံကို ဖတ်၍ မရပါ။","Unable to process image.":"ပုံကို ပြုပြင်၍ မရပါ။","Image is too large after compression. Please choose a smaller image.":"ပုံချုံ့ပြီးနောက်လည်း ကြီးနေသေးသည်။ ပိုသေးသောပုံကို ရွေးပါ။","Enter a title.":"ခေါင်းစဉ် ထည့်ပါ။","Choose an image first.":"အရင်ဆုံး ပုံရွေးပါ။","Delete this VIP Channel image?":"ဤ VIP Channel ပုံကို ဖျက်မှာ သေချာပါသလား။","VIP Channel image saved successfully.":"VIP Channel ပုံ သိမ်းပြီးပါပြီ။","VIP Channel image deleted.":"VIP Channel ပုံ ဖျက်ပြီးပါပြီ။","Unable to load VIP Channel images.":"VIP Channel ပုံများ ဖွင့်၍ မရပါ။","Unable to save VIP Channel image.":"VIP Channel ပုံ သိမ်း၍ မရပါ။","Editing:":"ပြင်ဆင်နေသည် -","Choose a valid content type":"မှန်ကန်သော အကြောင်းအရာအမျိုးအစားကို ရွေးပါ။","Title is required and text must be within the allowed length":"ခေါင်းစဉ် လိုအပ်ပြီး စာသားအရှည်လည်း သတ်မှတ်ချက်အတွင်း ဖြစ်ရပါမည်။","Title is required and must be 120 characters or fewer":"ခေါင်းစဉ် လိုအပ်ပြီး စာလုံး ၁၂၀ ထက် မပိုရပါ။","Caption must be 240 characters or fewer":"စာတန်းသည် စာလုံး ၂၄၀ ထက် မပိုရပါ။","Image must be PNG, JPG or WEBP and no larger than 500 KB after compression":"ပုံသည် PNG၊ JPG သို့မဟုတ် WEBP ဖြစ်ရမည်။ ချုံ့ပြီးနောက် 500 KB ထက် မပိုရပါ။","Sort order must be between 0 and 9999":"အစီအစဉ်နံပါတ်သည် 0 မှ 9999 အတွင်း ဖြစ်ရပါမည်။","VIP Channel supports up to 24 images":"VIP Channel တွင် ပုံ ၂၄ ပုံအထိ ထည့်နိုင်သည်။","Invalid image id":"ပုံ ID မမှန်ပါ။","VIP Channel image not found":"VIP Channel ပုံ မတွေ့ပါ။","Unable to update VIP Channel image":"VIP Channel ပုံ ပြင်၍ မရပါ။","Unable to delete VIP Channel image":"VIP Channel ပုံ ဖျက်၍ မရပါ။"});
+
 const adminTextMeta=new WeakMap(),adminAttrMeta=new WeakMap();
 function translateAdminText(value){
  const source=String(value??'');
@@ -678,7 +700,7 @@ function logout(){localStorage.removeItem('zonguru_admin_token');token='';locati
 async function start(){
   try{
     const d=await api('/api/admin/me'); currentAdmin=d.admin||null;
-    $('adminTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');$('platformTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');
+    $('adminTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');$('platformTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');$('vipChannelTab').classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');
     const secondAdminHeader=$('secondAdminHeader');if(secondAdminHeader)secondAdminHeader.classList.toggle('hidden',currentAdmin?.adminType!=='superadmin');
     const isMainAdmin=currentAdmin?.adminType==='superadmin';
     const roleLabel=currentAdmin?.roleLabel||(isMainAdmin?'Main Admin':'Second Admin');
@@ -695,8 +717,8 @@ async function start(){
 }
 function tab(t){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.t===t));
-  ['dashboard','users','transactions','announcements','products','liveActivities','chat','audits','admins','platform','eventsSettings','bonuses','currencyRatesPage'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
-  if(t==='dashboard')loadDashboard();if(t==='users')loadUsers();if(t==='bonuses'){populateBonusRecipients();loadBonuses();}if(t==='announcements')loadAnnouncements();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();loadPlatformBranding();}if(t==='eventsSettings')loadEventsContent();if(t==='products')loadProducts();if(t==='liveActivities')loadLiveActivitiesAdmin();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
+  ['dashboard','users','transactions','announcements','products','liveActivities','chat','audits','admins','platform','eventsSettings','vipChannel','bonuses','currencyRatesPage'].forEach(x=>$(x).classList.toggle('hidden',x!==t));
+  if(t==='dashboard')loadDashboard();if(t==='users')loadUsers();if(t==='bonuses'){populateBonusRecipients();loadBonuses();}if(t==='announcements')loadAnnouncements();if(t==='transactions'){loadTx().then(()=>markTransactionsSeen());}if(t==='platform'){loadDepositAddresses();loadTelegramSupport();loadPlatformBranding();}if(t==='eventsSettings')loadEventsContent();if(t==='vipChannel')loadVipChannelAdmin();if(t==='products')loadProducts();if(t==='liveActivities')loadLiveActivitiesAdmin();if(t==='chat')loadChatUsers();if(t==='audits')loadAudits();if(t==='admins')loadAdminManagement();
 }
 
 function setDashboardTrend(id,current,previous){
@@ -940,6 +962,81 @@ async function saveUserInsufficientRule(){if(!selected)return;const id=uid(selec
 async function resetTask(){if(!selected||!confirm('Reset task progress to 0? Old orders and profits stay.'))return;try{await api('/api/admin/users/'+uid(selected)+'/task-reset',{method:'POST'});msg('userMsg','Task reset to 0. Old orders and profits were preserved.',true)}catch(e){msg('userMsg',e.message)}}
 async function loadDepositAddresses(){if(!currentAdmin)return;try{const d=await api('/api/admin/deposit-addresses');const a=d.addresses||{};$('addrUsdtTrc20').value=a['USDT-TRC20']||'';$('addrUsdtErc20').value=a['USDT-ERC20']||'';$('addrEthErc20').value=a['ETH-ERC20']||'';$('addrBtc').value=a['BTC-BTC']||'';}catch(e){msg('platformMsg',e.message)}}
 let eventImageData='';
+
+let vipChannelImageData='',vipChannelItems=[],editingVipChannelId='';
+function compressVipChannelImage(file){
+ return new Promise((resolve,reject)=>{
+  if(!file||!/^image\/(png|jpeg|webp)$/i.test(file.type))return reject(Error('Choose a PNG, JPG or WEBP image.'));
+  const reader=new FileReader();
+  reader.onerror=()=>reject(Error('Unable to read image.'));
+  reader.onload=()=>{
+   const img=new Image();
+   img.onerror=()=>reject(Error('Unable to process image.'));
+   img.onload=()=>{
+    let scale=Math.min(1,1200/Math.max(img.width,img.height)),quality=.78,data='';
+    const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+    for(let i=0;i<14;i++){
+     canvas.width=Math.max(1,Math.round(img.width*scale));canvas.height=Math.max(1,Math.round(img.height*scale));
+     ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(img,0,0,canvas.width,canvas.height);
+     data=canvas.toDataURL('image/jpeg',quality);
+     if(data.length<=500000)break;
+     if(quality>.52)quality-=.06;else{scale*=.82;quality=.72;}
+    }
+    if(data.length>500000)return reject(Error('Image is too large after compression. Please choose a smaller image.'));
+    resolve(data);
+   };
+   img.src=String(reader.result||'');
+  };
+  reader.readAsDataURL(file);
+ });
+}
+async function previewVipChannelImage(){
+ const input=$('vipChannelImageInput'),file=input?.files?.[0];if(!file)return;
+ try{
+  vipChannelImageData=await compressVipChannelImage(file);
+  $('vipChannelImagePreview').src=vipChannelImageData;$('vipChannelImagePreview').style.display='block';
+  msg('vipChannelMsg','Image ready. It was compressed for safe storage.',true);
+ }catch(e){vipChannelImageData='';input.value='';$('vipChannelImagePreview').removeAttribute('src');$('vipChannelImagePreview').style.display='none';msg('vipChannelMsg',e.message||'Image could not be processed.');}
+}
+function clearVipChannelForm(){
+ editingVipChannelId='';vipChannelImageData='';$('vipChannelType').value='banner';$('vipChannelTitle').value='';$('vipChannelCaption').value='';$('vipChannelSortOrder').value='0';$('vipChannelActive').checked=true;$('vipChannelImageInput').value='';$('vipChannelImagePreview').removeAttribute('src');$('vipChannelImagePreview').style.display='none';
+}
+async function loadVipChannelAdmin(){
+ if(currentAdmin?.adminType!=='superadmin')return;
+ try{
+  const d=await api('/api/admin/vip-channel');vipChannelItems=Array.isArray(d.items)?d.items:[];
+  const body=$('vipChannelItemsBody');
+  if(!vipChannelItems.length){body.innerHTML='<tr><td colspan="6">No VIP Channel images have been added yet.</td></tr>';return;}
+  body.innerHTML=vipChannelItems.map(item=>{
+   const type={banner:'Top banner',entry:'Entrance tile',gallery:'Gallery image'}[item.type]||item.type;
+   return '<tr><td>'+esc(type)+'</td><td><img src="'+esc(item.image)+'" alt="" style="width:76px;height:48px;object-fit:cover;border-radius:7px;background:#111"></td><td><b>'+esc(item.title)+'</b><div style="color:#777;font-size:12px">'+esc(item.caption||'')+'</div></td><td>'+Number(item.sortOrder||0)+'</td><td>'+(item.active?'Active':'Hidden')+'</td><td><button class="secondary" type="button" onclick="editVipChannelItem(\''+esc(item.id)+'\')">Edit</button> <button class="danger" type="button" onclick="deleteVipChannelItem(\''+esc(item.id)+'\')">Delete</button></td></tr>';
+  }).join('');
+ }catch(e){msg('vipChannelMsg',e.message||'Unable to load VIP Channel images.');}
+}
+function editVipChannelItem(id){
+ const item=vipChannelItems.find(x=>String(x.id)===String(id));if(!item)return;
+ editingVipChannelId=String(item.id);$('vipChannelType').value=item.type;$('vipChannelTitle').value=item.title||'';$('vipChannelCaption').value=item.caption||'';$('vipChannelSortOrder').value=Number(item.sortOrder||0);$('vipChannelActive').checked=item.active!==false;vipChannelImageData=item.image||'';$('vipChannelImageInput').value='';
+ if(vipChannelImageData){$('vipChannelImagePreview').src=vipChannelImageData;$('vipChannelImagePreview').style.display='block';}
+ msg('vipChannelMsg','Editing: '+(item.title||item.type),true);window.scrollTo({top:0,behavior:'smooth'});
+}
+async function saveVipChannelItem(){
+ if(currentAdmin?.adminType!=='superadmin')return;
+ const title=$('vipChannelTitle').value.trim(),caption=$('vipChannelCaption').value.trim(),sortOrder=Number($('vipChannelSortOrder').value||0);
+ if(!title)return msg('vipChannelMsg','Enter a title.');
+ if(!vipChannelImageData)return msg('vipChannelMsg','Choose an image first.');
+ const payload={type:$('vipChannelType').value,title,caption,image:vipChannelImageData,sortOrder,active:$('vipChannelActive').checked};
+ try{
+  const path=editingVipChannelId?'/api/admin/vip-channel/items/'+encodeURIComponent(editingVipChannelId):'/api/admin/vip-channel/items';
+  await api(path,{method:editingVipChannelId?'PUT':'POST',body:JSON.stringify(payload)});
+  msg('vipChannelMsg','VIP Channel image saved successfully.',true);clearVipChannelForm();await loadVipChannelAdmin();
+ }catch(e){msg('vipChannelMsg',e.message||'Unable to save VIP Channel image.');}
+}
+async function deleteVipChannelItem(id){
+ const item=vipChannelItems.find(x=>String(x.id)===String(id));if(!item)return;
+ if(!confirm('Delete this VIP Channel image?'))return;
+ try{await api('/api/admin/vip-channel/items/'+encodeURIComponent(id),{method:'DELETE'});msg('vipChannelMsg','VIP Channel image deleted.',true);if(editingVipChannelId===String(id))clearVipChannelForm();await loadVipChannelAdmin();}
+ catch(e){msg('vipChannelMsg',e.message||'Unable to delete VIP Channel image.');}
+}
 async function previewEventImage(){const file=$('eventImageInput')?.files?.[0];if(!file)return;if(!/^image\/(png|jpeg|webp|gif)$/i.test(file.type)||file.size>10*1024*1024){msg('eventsContentMsg','Choose PNG, JPG, WEBP or GIF no larger than 10 MB.');$('eventImageInput').value='';return}eventImageData=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result||''));reader.onerror=()=>reject(Error('Unable to read image'));reader.readAsDataURL(file)});$('eventImagePreview').src=eventImageData;$('eventImagePreview').style.display='block'}
 function clearEventImage(){eventImageData='';$('eventImageInput').value='';$('eventImagePreview').removeAttribute('src');$('eventImagePreview').style.display='none'}
 async function loadEventsContent(){if(currentAdmin?.adminType!=='superadmin')return;try{const d=await api('/api/admin/events'),e=d.event||{};$('eventTitleInput').value=e.title||'Salary List';$('eventTextInput').value=e.text||'';eventImageData=e.image||'';if(eventImageData){$('eventImagePreview').src=eventImageData;$('eventImagePreview').style.display='block'}else clearEventImage()}catch(e){msg('eventsContentMsg',e.message)}}

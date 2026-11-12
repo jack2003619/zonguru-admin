@@ -29,6 +29,7 @@ function cleanUser(user) {
   if (!user) return null;
   const data = user.toObject ? user.toObject() : { ...user };
   delete data.passwordHash;
+  delete data.vipChannelPinHash;
   return data;
 }
 
@@ -126,6 +127,17 @@ const platformSettingSchema = new mongoose.Schema({
   updatedAt: { type: Date, default: Date.now }
 }, { collection: 'platform_settings', strict: false });
 const PlatformSetting = mongoose.model('AdminPlatformSetting', platformSettingSchema);
+const vipChannelMediaSchema = new mongoose.Schema({
+  type: { type: String, enum: ['banner','entry','gallery'], required: true, index: true },
+  title: { type: String, default: '', maxlength: 120 },
+  caption: { type: String, default: '', maxlength: 240 },
+  image: { type: String, required: true },
+  sortOrder: { type: Number, default: 0, min: 0, max: 9999 },
+  active: { type: Boolean, default: true, index: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+}, { collection: 'vip_channel_media', strict: false });
+const VipChannelMedia = mongoose.model('AdminVipChannelMedia', vipChannelMediaSchema);
 
 const AdminAccount = mongoose.model('AdminAccount', adminAccountSchema);
 const AdminInviteCode = mongoose.model('AdminInviteCode', adminInviteCodeSchema);
@@ -588,6 +600,63 @@ app.get('/api/public/telegram-support',async(req,res)=>{
 });
 app.get('/api/admin/events',auth,async(req,res)=>{try{const r=await fetch(BACKEND_URL+'/api/public/events',{headers:{'Cache-Control':'no-store'}});const data=await r.json().catch(()=>({}));if(!r.ok||data.success!==true)return res.status(r.status||502).json({success:false,message:data.message||'Unable to load Events content'});res.json(data)}catch(e){res.status(502).json({success:false,message:'Platform backend unavailable'})}});
 app.put('/api/admin/events',auth,async(req,res)=>{try{const bridge=String(process.env.BACKEND_BRIDGE_SECRET||'');if(!bridge)return res.status(503).json({success:false,message:'Backend bridge secret is not configured'});const r=await fetch(BACKEND_URL+'/api/internal/events',{method:'PUT',headers:{'Content-Type':'application/json','x-deposit-settings-key':bridge},body:JSON.stringify(req.body||{})});const data=await r.json().catch(()=>({}));if(!r.ok||data.success!==true)return res.status(r.status||502).json({success:false,message:data.message||'Unable to save Events content'});await audit(req.admin,'EVENTS_CONTENT_UPDATE','Updated Events page content');res.json(data)}catch(e){res.status(502).json({success:false,message:'Platform backend unavailable'})}});
+
+
+function cleanVipChannelAdminItem(item){
+  return {id:String(item._id),type:item.type,title:item.title||'',caption:item.caption||'',image:item.image||'',sortOrder:Number(item.sortOrder||0),active:item.active!==false,createdAt:item.createdAt||null,updatedAt:item.updatedAt||null};
+}
+function validVipChannelAdminImage(image){
+  return typeof image==='string'&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i.test(image)&&image.length<=500000;
+}
+app.get('/api/admin/vip-channel',auth,async(req,res)=>{
+  if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
+  try{
+    const items=await VipChannelMedia.find().sort({type:1,sortOrder:1,createdAt:-1}).lean();
+    res.set('Cache-Control','no-store');res.json({success:true,items:items.map(cleanVipChannelAdminItem)});
+  }catch(e){console.error('Load VIP Channel images:',e.message);res.status(500).json({success:false,message:'Unable to load VIP Channel images'});}
+});
+app.post('/api/admin/vip-channel/items',auth,async(req,res)=>{
+  if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
+  try{
+    const type=String(req.body?.type||'gallery'),title=String(req.body?.title||'').trim(),caption=String(req.body?.caption||'').trim(),image=String(req.body?.image||''),sortOrder=Number(req.body?.sortOrder||0),active=req.body?.active!==false;
+    if(!['banner','entry','gallery'].includes(type))return res.status(400).json({success:false,message:'Choose a valid content type'});
+    if(!title||title.length>120||caption.length>240)return res.status(400).json({success:false,message:'Title is required and text must be within the allowed length'});
+    if(!validVipChannelAdminImage(image))return res.status(400).json({success:false,message:'Image must be PNG, JPG or WEBP and no larger than 500 KB after compression'});
+    if(!Number.isInteger(sortOrder)||sortOrder<0||sortOrder>9999)return res.status(400).json({success:false,message:'Sort order must be between 0 and 9999'});
+    if(await VipChannelMedia.countDocuments()>=24)return res.status(400).json({success:false,message:'VIP Channel supports up to 24 images'});
+    const item=await VipChannelMedia.create({type,title,caption,image,sortOrder,active,updatedAt:new Date()});
+    await audit(req.admin,'VIP_CHANNEL_CONTENT_UPDATE','Added VIP Channel image: '+title);
+    res.json({success:true,item:cleanVipChannelAdminItem(item.toObject()),message:'VIP Channel image saved'});
+  }catch(e){console.error('Create VIP Channel image:',e.message);res.status(500).json({success:false,message:'Unable to save VIP Channel image'});}
+});
+app.put('/api/admin/vip-channel/items/:id',auth,async(req,res)=>{
+  if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
+  try{
+    if(!mongoose.isValidObjectId(req.params.id))return res.status(400).json({success:false,message:'Invalid image id'});
+    const update={updatedAt:new Date()};
+    if(req.body?.type!==undefined){const type=String(req.body.type);if(!['banner','entry','gallery'].includes(type))return res.status(400).json({success:false,message:'Choose a valid content type'});update.type=type;}
+    if(req.body?.title!==undefined){const title=String(req.body.title||'').trim();if(!title||title.length>120)return res.status(400).json({success:false,message:'Title is required and must be 120 characters or fewer'});update.title=title;}
+    if(req.body?.caption!==undefined){const caption=String(req.body.caption||'').trim();if(caption.length>240)return res.status(400).json({success:false,message:'Caption must be 240 characters or fewer'});update.caption=caption;}
+    if(req.body?.image!==undefined){const image=String(req.body.image||'');if(!validVipChannelAdminImage(image))return res.status(400).json({success:false,message:'Image must be PNG, JPG or WEBP and no larger than 500 KB after compression'});update.image=image;}
+    if(req.body?.sortOrder!==undefined){const sortOrder=Number(req.body.sortOrder);if(!Number.isInteger(sortOrder)||sortOrder<0||sortOrder>9999)return res.status(400).json({success:false,message:'Sort order must be between 0 and 9999'});update.sortOrder=sortOrder;}
+    if(req.body?.active!==undefined)update.active=req.body.active===true||String(req.body.active).toLowerCase()==='true';
+    const item=await VipChannelMedia.findByIdAndUpdate(req.params.id,{$set:update},{new:true,runValidators:true});
+    if(!item)return res.status(404).json({success:false,message:'VIP Channel image not found'});
+    await audit(req.admin,'VIP_CHANNEL_CONTENT_UPDATE','Updated VIP Channel image: '+(item.title||String(item._id)));
+    res.json({success:true,item:cleanVipChannelAdminItem(item.toObject()),message:'VIP Channel image updated'});
+  }catch(e){console.error('Update VIP Channel image:',e.message);res.status(500).json({success:false,message:'Unable to update VIP Channel image'});}
+});
+app.delete('/api/admin/vip-channel/items/:id',auth,async(req,res)=>{
+  if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
+  try{
+    if(!mongoose.isValidObjectId(req.params.id))return res.status(400).json({success:false,message:'Invalid image id'});
+    const item=await VipChannelMedia.findByIdAndDelete(req.params.id);
+    if(!item)return res.status(404).json({success:false,message:'VIP Channel image not found'});
+    await audit(req.admin,'VIP_CHANNEL_CONTENT_UPDATE','Deleted VIP Channel image: '+(item.title||String(item._id)));
+    res.json({success:true,deleted:true});
+  }catch(e){console.error('Delete VIP Channel image:',e.message);res.status(500).json({success:false,message:'Unable to delete VIP Channel image'});}
+});
+
 app.get('/api/admin/telegram-support',auth,async(req,res)=>{
   if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
   try{const s=await PlatformSetting.findOne({key:'telegram_support_url'}).lean();res.json({success:true,url:normalizeTelegramSupportUrl(s?.value?.url)||DEFAULT_TELEGRAM_SUPPORT_URL})}
