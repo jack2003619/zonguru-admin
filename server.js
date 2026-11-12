@@ -29,6 +29,7 @@ function cleanUser(user) {
   if (!user) return null;
   const data = user.toObject ? user.toObject() : { ...user };
   delete data.passwordHash;
+  delete data.vipChannelPinHash;
   return data;
 }
 
@@ -588,6 +589,27 @@ app.get('/api/public/telegram-support',async(req,res)=>{
 });
 app.get('/api/admin/events',auth,async(req,res)=>{try{const r=await fetch(BACKEND_URL+'/api/public/events',{headers:{'Cache-Control':'no-store'}});const data=await r.json().catch(()=>({}));if(!r.ok||data.success!==true)return res.status(r.status||502).json({success:false,message:data.message||'Unable to load Events content'});res.json(data)}catch(e){res.status(502).json({success:false,message:'Platform backend unavailable'})}});
 app.put('/api/admin/events',auth,async(req,res)=>{try{const bridge=String(process.env.BACKEND_BRIDGE_SECRET||'');if(!bridge)return res.status(503).json({success:false,message:'Backend bridge secret is not configured'});const r=await fetch(BACKEND_URL+'/api/internal/events',{method:'PUT',headers:{'Content-Type':'application/json','x-deposit-settings-key':bridge},body:JSON.stringify(req.body||{})});const data=await r.json().catch(()=>({}));if(!r.ok||data.success!==true)return res.status(r.status||502).json({success:false,message:data.message||'Unable to save Events content'});await audit(req.admin,'EVENTS_CONTENT_UPDATE','Updated Events page content');res.json(data)}catch(e){res.status(502).json({success:false,message:'Platform backend unavailable'})}});
+
+async function vipChannelAdminProxy(req,res,method,path,auditAction){
+  if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
+  const bridge=String(process.env.BACKEND_BRIDGE_SECRET||'');
+  if(!bridge)return res.status(503).json({success:false,message:'Backend bridge secret is not configured'});
+  try{
+    const options={method,headers:{'Content-Type':'application/json','x-deposit-settings-key':bridge}};
+    if(!['GET','HEAD'].includes(method))options.body=JSON.stringify(req.body||{});
+    const response=await fetch(BACKEND_URL+path,options);
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok||data.success!==true)return res.status(response.status||502).json({success:false,message:data.message||'VIP Channel request failed'});
+    if(auditAction)await audit(req.admin,'VIP_CHANNEL_CONTENT_UPDATE',auditAction);
+    res.set('Cache-Control','no-store');
+    res.json(data);
+  }catch(e){console.error('VIP Channel admin bridge:',e.message);res.status(502).json({success:false,message:'Platform backend unavailable'});}
+}
+app.get('/api/admin/vip-channel',auth,async(req,res)=>vipChannelAdminProxy(req,res,'GET','/api/internal/vip-channel'));
+app.post('/api/admin/vip-channel/items',auth,async(req,res)=>vipChannelAdminProxy(req,res,'POST','/api/internal/vip-channel/items','Added a VIP Channel image'));
+app.put('/api/admin/vip-channel/items/:id',auth,async(req,res)=>vipChannelAdminProxy(req,res,'PUT','/api/internal/vip-channel/items/'+encodeURIComponent(req.params.id),'Updated a VIP Channel image'));
+app.delete('/api/admin/vip-channel/items/:id',auth,async(req,res)=>vipChannelAdminProxy(req,res,'DELETE','/api/internal/vip-channel/items/'+encodeURIComponent(req.params.id),'Deleted a VIP Channel image'));
+
 app.get('/api/admin/telegram-support',auth,async(req,res)=>{
   if(!isSuperAdmin(req))return res.status(403).json({success:false,message:'Main admin only'});
   try{const s=await PlatformSetting.findOne({key:'telegram_support_url'}).lean();res.json({success:true,url:normalizeTelegramSupportUrl(s?.value?.url)||DEFAULT_TELEGRAM_SUPPORT_URL})}
